@@ -1,0 +1,76 @@
+#!/usr/bin/env ruby
+
+# Args: base-opcode-file cb-opcode-file outdir
+
+def method_source(mnemonic, flags, sample, prefix)
+	"""// Mnemonic: #{sample}
+// Sets Flags: #{flags}
+func (p *GBProcessor) #{prefix}#{mnemonic}(opcode byte, params ...byte) {
+
+}"""
+end
+
+def map_line(mnemonic, opcode, len, cycles, prefix)
+	short = long = cycles
+	if cycles.include? "/" then
+		long, short = cycles.split("/").map(&:strip)
+	end
+		"{#{opcode}, #{len}, #{short}, #{long}, (*GBProcessor).#{prefix}#{mnemonic}},"
+
+end
+
+def process_file(infile, prefix="")
+	map_lines = []
+	method_sources = []
+	infile.each_line do |line|
+		line.chomp!
+		if line == ""
+			map_lines << "{},"
+			next
+		end
+		mnemonic, opcode, len, cycles, flags, sample = line.split("\t")
+		map_lines << map_line(mnemonic, opcode, len, cycles, prefix)
+		method_sources << method_source(mnemonic, flags, sample, prefix)
+	end
+	return map_lines, method_sources
+end
+
+if ARGV.count != 3 then
+	puts "Usage: generate_functions base-opcode-file cb-opcode-file outdir"
+	exit
+end
+
+basefile = File.open(ARGV[0])
+map_lines, method_sources = process_file basefile
+basefile.close
+
+cbfile = File.open(ARGV[1])
+cb_map_lines, cb_method_sources = process_file cbfile, "cb_"
+cbfile.close
+
+method_sources += cb_method_sources
+
+
+outdir = ARGV[2]
+asmfile = File.open(outdir + File::SEPARATOR + "asm_gb.go", 'w')
+mapfile = File.open(outdir + File::SEPARATOR + "gb_opcode_map.go", 'w')
+
+
+mapfile.write ["package processor","// This file was auto-generated",""].join("\n")
+mapfile.write """
+func (p *GBProcessor) initOpcodes() {
+	p.opcodeMap = OpcodeMap{
+		#{map_lines.join("\n\t\t")}
+	}
+	p.cbOpcodeMap = OpcodeMap{
+		#{cb_map_lines.join("\n\t\t")}
+	}
+}
+
+"""
+mapfile.close
+
+asmfile.write ["package processor","// This file's structure was auto-generated",""].join("\n")
+asmfile.write method_sources.join("\n\n")
+asmfile.close
+

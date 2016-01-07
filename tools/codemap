@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+
+if ARGV.count != 2
+	puts("./codemap in-file out-file")
+	exit
+end
+
+f = File.open(ARGV[0])
+lines = f.lines.each_slice(3).map{|x| x.map(&:strip)}
+f.close
+
+def mangle(mm)
+	mm.sub(/\(/,'x').
+		gsub(/r8|a8|a16|d8|d16/,'i').
+		gsub(/hl\+/,'hli').
+		gsub(/hl-/,'hld').
+		gsub(/ /,'_').
+		gsub(/,|\)|\+/,'')
+end
+
+ops = lines.map.with_index do |l,i|
+	if l[0] == ""
+		nil
+	else
+		[mangle(l[0].downcase),"0x#{i.to_s(16).rjust(2,"0")}",l[1].sub(/  /,"\t"),l[2].gsub(/ /,"").downcase,l[0]] * "\t"
+	end
+end
+
+
+of = File.open(ARGV[1],'w')
+of.write(ops * "\n")
+of.close
+

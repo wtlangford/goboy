@@ -1,0 +1,256 @@
+nop	0x00	1	4	----	NOP
+ld_bci	0x01	3	12	----	LD BC,d16
+ld_xbca	0x02	1	8	----	LD (BC),A
+inc_bc	0x03	1	8	----	INC BC
+inc_b	0x04	1	4	z0h-	INC B
+dec_b	0x05	1	4	z1h-	DEC B
+ld_bi	0x06	2	8	----	LD B,d8
+rlca	0x07	1	4	000c	RLCA
+ld_xisp	0x08	3	20	----	LD (a16),SP
+add_hlbc	0x09	1	8	-0hc	ADD HL,BC
+ld_axbc	0x0a	1	8	----	LD A,(BC)
+dec_bc	0x0b	1	8	----	DEC BC
+inc_c	0x0c	1	4	z0h-	INC C
+dec_c	0x0d	1	4	z1h-	DEC C
+ld_ci	0x0e	2	8	----	LD C,d8
+rrca	0x0f	1	4	000c	RRCA
+stop_0	0x10	2	4	----	STOP 0
+ld_dei	0x11	3	12	----	LD DE,d16
+ld_xdea	0x12	1	8	----	LD (DE),A
+inc_de	0x13	1	8	----	INC DE
+inc_d	0x14	1	4	z0h-	INC D
+dec_d	0x15	1	4	z1h-	DEC D
+ld_di	0x16	2	8	----	LD D,d8
+rla	0x17	1	4	000c	RLA
+jr_i	0x18	2	12	----	JR r8
+add_hlde	0x19	1	8	-0hc	ADD HL,DE
+ld_axde	0x1a	1	8	----	LD A,(DE)
+dec_de	0x1b	1	8	----	DEC DE
+inc_e	0x1c	1	4	z0h-	INC E
+dec_e	0x1d	1	4	z1h-	DEC E
+ld_ei	0x1e	2	8	----	LD E,d8
+rra	0x1f	1	4	000c	RRA
+jr_nzi	0x20	2	12/8	----	JR NZ,r8
+ld_hli	0x21	3	12	----	LD HL,d16
+ld_xhlia	0x22	1	8	----	LD (HL+),A
+inc_hl	0x23	1	8	----	INC HL
+inc_h	0x24	1	4	z0h-	INC H
+dec_h	0x25	1	4	z1h-	DEC H
+ld_hi	0x26	2	8	----	LD H,d8
+daa	0x27	1	4	z-0c	DAA
+jr_zi	0x28	2	12/8	----	JR Z,r8
+add_hlhl	0x29	1	8	-0hc	ADD HL,HL
+ld_axhli	0x2a	1	8	----	LD A,(HL+)
+dec_hl	0x2b	1	8	----	DEC HL
+inc_l	0x2c	1	4	z0h-	INC L
+dec_l	0x2d	1	4	z1h-	DEC L
+ld_li	0x2e	2	8	----	LD L,d8
+cpl	0x2f	1	4	-11-	CPL
+jr_nci	0x30	2	12/8	----	JR NC,r8
+ld_spi	0x31	3	12	----	LD SP,d16
+ld_xhlda	0x32	1	8	----	LD (HL-),A
+inc_sp	0x33	1	8	----	INC SP
+inc_xhl	0x34	1	12	z0h-	INC (HL)
+dec_xhl	0x35	1	12	z1h-	DEC (HL)
+ld_xhli	0x36	2	12	----	LD (HL),d8
+scf	0x37	1	4	-001	SCF
+jr_ci	0x38	2	12/8	----	JR C,r8
+add_hlsp	0x39	1	8	-0hc	ADD HL,SP
+ld_axhld	0x3a	1	8	----	LD A,(HL-)
+dec_sp	0x3b	1	8	----	DEC SP
+inc_a	0x3c	1	4	z0h-	INC A
+dec_a	0x3d	1	4	z1h-	DEC A
+ld_ai	0x3e	2	8	----	LD A,d8
+ccf	0x3f	1	4	-00c	CCF
+ld_bb	0x40	1	4	----	LD B,B
+ld_bc	0x41	1	4	----	LD B,C
+ld_bd	0x42	1	4	----	LD B,D
+ld_be	0x43	1	4	----	LD B,E
+ld_bh	0x44	1	4	----	LD B,H
+ld_bl	0x45	1	4	----	LD B,L
+ld_bxhl	0x46	1	8	----	LD B,(HL)
+ld_ba	0x47	1	4	----	LD B,A
+ld_cb	0x48	1	4	----	LD C,B
+ld_cc	0x49	1	4	----	LD C,C
+ld_cd	0x4a	1	4	----	LD C,D
+ld_ce	0x4b	1	4	----	LD C,E
+ld_ch	0x4c	1	4	----	LD C,H
+ld_cl	0x4d	1	4	----	LD C,L
+ld_cxhl	0x4e	1	8	----	LD C,(HL)
+ld_ca	0x4f	1	4	----	LD C,A
+ld_db	0x50	1	4	----	LD D,B
+ld_dc	0x51	1	4	----	LD D,C
+ld_dd	0x52	1	4	----	LD D,D
+ld_de	0x53	1	4	----	LD D,E
+ld_dh	0x54	1	4	----	LD D,H
+ld_dl	0x55	1	4	----	LD D,L
+ld_dxhl	0x56	1	8	----	LD D,(HL)
+ld_da	0x57	1	4	----	LD D,A
+ld_eb	0x58	1	4	----	LD E,B
+ld_ec	0x59	1	4	----	LD E,C
+ld_ed	0x5a	1	4	----	LD E,D
+ld_ee	0x5b	1	4	----	LD E,E
+ld_eh	0x5c	1	4	----	LD E,H
+ld_el	0x5d	1	4	----	LD E,L
+ld_exhl	0x5e	1	8	----	LD E,(HL)
+ld_ea	0x5f	1	4	----	LD E,A
+ld_hb	0x60	1	4	----	LD H,B
+ld_hc	0x61	1	4	----	LD H,C
+ld_hd	0x62	1	4	----	LD H,D
+ld_he	0x63	1	4	----	LD H,E
+ld_hh	0x64	1	4	----	LD H,H
+ld_hl	0x65	1	4	----	LD H,L
+ld_hxhl	0x66	1	8	----	LD H,(HL)
+ld_ha	0x67	1	4	----	LD H,A
+ld_lb	0x68	1	4	----	LD L,B
+ld_lc	0x69	1	4	----	LD L,C
+ld_ld	0x6a	1	4	----	LD L,D
+ld_le	0x6b	1	4	----	LD L,E
+ld_lh	0x6c	1	4	----	LD L,H
+ld_ll	0x6d	1	4	----	LD L,L
+ld_lxhl	0x6e	1	8	----	LD L,(HL)
+ld_la	0x6f	1	4	----	LD L,A
+ld_xhlb	0x70	1	8	----	LD (HL),B
+ld_xhlc	0x71	1	8	----	LD (HL),C
+ld_xhld	0x72	1	8	----	LD (HL),D
+ld_xhle	0x73	1	8	----	LD (HL),E
+ld_xhlh	0x74	1	8	----	LD (HL),H
+ld_xhll	0x75	1	8	----	LD (HL),L
+halt	0x76	1	4	----	HALT
+ld_xhla	0x77	1	8	----	LD (HL),A
+ld_ab	0x78	1	4	----	LD A,B
+ld_ac	0x79	1	4	----	LD A,C
+ld_ad	0x7a	1	4	----	LD A,D
+ld_ae	0x7b	1	4	----	LD A,E
+ld_ah	0x7c	1	4	----	LD A,H
+ld_al	0x7d	1	4	----	LD A,L
+ld_axhl	0x7e	1	8	----	LD A,(HL)
+ld_aa	0x7f	1	4	----	LD A,A
+add_ab	0x80	1	4	z0hc	ADD A,B
+add_ac	0x81	1	4	z0hc	ADD A,C
+add_ad	0x82	1	4	z0hc	ADD A,D
+add_ae	0x83	1	4	z0hc	ADD A,E
+add_ah	0x84	1	4	z0hc	ADD A,H
+add_al	0x85	1	4	z0hc	ADD A,L
+add_axhl	0x86	1	8	z0hc	ADD A,(HL)
+add_aa	0x87	1	4	z0hc	ADD A,A
+adc_ab	0x88	1	4	z0hc	ADC A,B
+adc_ac	0x89	1	4	z0hc	ADC A,C
+adc_ad	0x8a	1	4	z0hc	ADC A,D
+adc_ae	0x8b	1	4	z0hc	ADC A,E
+adc_ah	0x8c	1	4	z0hc	ADC A,H
+adc_al	0x8d	1	4	z0hc	ADC A,L
+adc_axhl	0x8e	1	8	z0hc	ADC A,(HL)
+adc_aa	0x8f	1	4	z0hc	ADC A,A
+sub_b	0x90	1	4	z1hc	SUB B
+sub_c	0x91	1	4	z1hc	SUB C
+sub_d	0x92	1	4	z1hc	SUB D
+sub_e	0x93	1	4	z1hc	SUB E
+sub_h	0x94	1	4	z1hc	SUB H
+sub_l	0x95	1	4	z1hc	SUB L
+sub_xhl	0x96	1	8	z1hc	SUB (HL)
+sub_a	0x97	1	4	z1hc	SUB A
+sbc_ab	0x98	1	4	z1hc	SBC A,B
+sbc_ac	0x99	1	4	z1hc	SBC A,C
+sbc_ad	0x9a	1	4	z1hc	SBC A,D
+sbc_ae	0x9b	1	4	z1hc	SBC A,E
+sbc_ah	0x9c	1	4	z1hc	SBC A,H
+sbc_al	0x9d	1	4	z1hc	SBC A,L
+sbc_axhl	0x9e	1	8	z1hc	SBC A,(HL)
+sbc_aa	0x9f	1	4	z1hc	SBC A,A
+and_b	0xa0	1	4	z010	AND B
+and_c	0xa1	1	4	z010	AND C
+and_d	0xa2	1	4	z010	AND D
+and_e	0xa3	1	4	z010	AND E
+and_h	0xa4	1	4	z010	AND H
+and_l	0xa5	1	4	z010	AND L
+and_xhl	0xa6	1	8	z010	AND (HL)
+and_a	0xa7	1	4	z010	AND A
+xor_b	0xa8	1	4	z000	XOR B
+xor_c	0xa9	1	4	z000	XOR C
+xor_d	0xaa	1	4	z000	XOR D
+xor_e	0xab	1	4	z000	XOR E
+xor_h	0xac	1	4	z000	XOR H
+xor_l	0xad	1	4	z000	XOR L
+xor_xhl	0xae	1	8	z000	XOR (HL)
+xor_a	0xaf	1	4	z000	XOR A
+or_b	0xb0	1	4	z000	OR B
+or_c	0xb1	1	4	z000	OR C
+or_d	0xb2	1	4	z000	OR D
+or_e	0xb3	1	4	z000	OR E
+or_h	0xb4	1	4	z000	OR H
+or_l	0xb5	1	4	z000	OR L
+or_xhl	0xb6	1	8	z000	OR (HL)
+or_a	0xb7	1	4	z000	OR A
+cp_b	0xb8	1	4	z1hc	CP B
+cp_c	0xb9	1	4	z1hc	CP C
+cp_d	0xba	1	4	z1hc	CP D
+cp_e	0xbb	1	4	z1hc	CP E
+cp_h	0xbc	1	4	z1hc	CP H
+cp_l	0xbd	1	4	z1hc	CP L
+cp_xhl	0xbe	1	8	z1hc	CP (HL)
+cp_a	0xbf	1	4	z1hc	CP A
+ret_nz	0xc0	1	20/8	----	RET NZ
+pop_bc	0xc1	1	12	----	POP BC
+jp_nzi	0xc2	3	16/12	----	JP NZ,a16
+jp_i	0xc3	3	16	----	JP a16
+call_nzi	0xc4	3	24/12	----	CALL NZ,a16
+push_bc	0xc5	1	16	----	PUSH BC
+add_ai	0xc6	2	8	z0hc	ADD A,d8
+rst_00h	0xc7	1	16	----	RST 00H
+ret_z	0xc8	1	20/8	----	RET Z
+ret	0xc9	1	16	----	RET
+jp_zi	0xca	3	16/12	----	JP Z,a16
+prefix_cb	0xcb	1	4	----	PREFIX CB
+call_zi	0xcc	3	24/12	----	CALL Z,a16
+call_i	0xcd	3	24	----	CALL a16
+adc_ai	0xce	2	8	z0hc	ADC A,d8
+rst_08h	0xcf	1	16	----	RST 08H
+ret_nc	0xd0	1	20/8	----	RET NC
+pop_de	0xd1	1	12	----	POP DE
+jp_nci	0xd2	3	16/12	----	JP NC,a16
+
+call_nci	0xd4	3	24/12	----	CALL NC,a16
+push_de	0xd5	1	16	----	PUSH DE
+sub_i	0xd6	2	8	z1hc	SUB d8
+rst_10h	0xd7	1	16	----	RST 10H
+ret_c	0xd8	1	20/8	----	RET C
+reti	0xd9	1	16	----	RETI
+jp_ci	0xda	3	16/12	----	JP C,a16
+
+call_ci	0xdc	3	24/12	----	CALL C,a16
+
+sbc_ai	0xde	2	8	z1hc	SBC A,d8
+rst_18h	0xdf	1	16	----	RST 18H
+ldh_xia	0xe0	2	12	----	LDH (a8),A
+pop_hl	0xe1	1	12	----	POP HL
+ld_xca	0xe2	2	8	----	LD (C),A
+
+
+push_hl	0xe5	1	16	----	PUSH HL
+and_i	0xe6	2	8	z010	AND d8
+rst_20h	0xe7	1	16	----	RST 20H
+add_spi	0xe8	2	16	00hc	ADD SP,r8
+jp_xhl	0xe9	1	4	----	JP (HL)
+ld_xia	0xea	3	16	----	LD (a16),A
+
+
+
+xor_i	0xee	2	8	z000	XOR d8
+rst_28h	0xef	1	16	----	RST 28H
+ldh_axi	0xf0	2	12	----	LDH A,(a8)
+pop_af	0xf1	1	12	znhc	POP AF
+ld_axc	0xf2	2	8	----	LD A,(C)
+di	0xf3	1	4	----	DI
+
+push_af	0xf5	1	16	----	PUSH AF
+or_i	0xf6	2	8	z000	OR d8
+rst_30h	0xf7	1	16	----	RST 30H
+ld_hlspi	0xf8	2	12	00hc	LD HL,SP+r8
+ld_sphl	0xf9	1	8	----	LD SP,HL
+ld_axi	0xfa	3	16	----	LD A,(a16)
+ei	0xfb	1	4	----	EI
+
+
+cp_i	0xfe	2	8	z1hc	CP d8
+rst_38h	0xff	1	16	----	RST 38H
