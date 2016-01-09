@@ -1,10 +1,11 @@
+// vim: noet:ts=3:sw=3:sts=3
 package processor
 
 // This file's structure was auto-generated
 // Mnemonic: NOP
 // Sets Flags: ----
 func (p *GBProcessor) nop(opcode byte, params ...byte) {
-
+	// Intentionally empty
 }
 
 // Mnemonic: LD rr,d16
