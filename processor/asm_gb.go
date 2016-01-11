@@ -394,387 +394,184 @@ func (p *GBProcessor) ld_rr(opcode byte, params ...byte) {
 
 }
 
-// Mnemonic: ADD A,B
+// Mnemonic: ADD A,n
+//  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z0hc
-func (p *GBProcessor) add_ab(opcode byte, params ...byte) {
+func (p *GBProcessor) add_an(opcode byte, params ...byte) {
+	var val *uint8
+	var f uint8
 
+	switch opcode {
+	case 0x87:
+		val = &p.regs.A
+	case 0x80:
+		val = &p.regs.B
+	case 0x81:
+		val = &p.regs.C
+	case 0x82:
+		val = &p.regs.D
+	case 0x83:
+		val = &p.regs.E
+	case 0x84:
+		val = &p.regs.H
+	case 0x85:
+		val = &p.regs.L
+	case 0x86:
+		v := p.readAddress(p.regs.HL())
+		val = &v
+	case 0xC6:
+		val = &params[0]
+	}
+
+	res16Bit := uint16(*val) + uint16(p.regs.A)
+	if res16Bit&0x100 > 0 {
+		f |= GBFlagCarry
+	}
+
+	if ((*val&0xF)+(p.regs.A&0xF))&0x10 > 0 {
+		f |= GBFlagHalfCarry
+	}
+
+	p.regs.A = *val + p.regs.A
+	if p.regs.A == 0 {
+		f |= GBFlagZero
+	}
 }
 
-// Mnemonic: ADD A,C
+// Mnemonic: ADC A,n
+//  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z0hc
-func (p *GBProcessor) add_ac(opcode byte, params ...byte) {
+func (p *GBProcessor) adc_n(opcode byte, params ...byte) {
 
 }
 
-// Mnemonic: ADD A,D
-// Sets Flags: z0hc
-func (p *GBProcessor) add_ad(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADD A,E
-// Sets Flags: z0hc
-func (p *GBProcessor) add_ae(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADD A,H
-// Sets Flags: z0hc
-func (p *GBProcessor) add_ah(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADD A,L
-// Sets Flags: z0hc
-func (p *GBProcessor) add_al(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADD A,(HL)
-// Sets Flags: z0hc
-func (p *GBProcessor) add_axhl(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADD A,A
-// Sets Flags: z0hc
-func (p *GBProcessor) add_aa(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADC A,B
-// Sets Flags: z0hc
-func (p *GBProcessor) adc_ab(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADC A,C
-// Sets Flags: z0hc
-func (p *GBProcessor) adc_ac(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADC A,D
-// Sets Flags: z0hc
-func (p *GBProcessor) adc_ad(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADC A,E
-// Sets Flags: z0hc
-func (p *GBProcessor) adc_ae(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADC A,H
-// Sets Flags: z0hc
-func (p *GBProcessor) adc_ah(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADC A,L
-// Sets Flags: z0hc
-func (p *GBProcessor) adc_al(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADC A,(HL)
-// Sets Flags: z0hc
-func (p *GBProcessor) adc_axhl(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADC A,A
-// Sets Flags: z0hc
-func (p *GBProcessor) adc_aa(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SUB B
+// Mnemonic: SUB A,n
+//  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z1hc
-func (p *GBProcessor) sub_b(opcode byte, params ...byte) {
+func (p *GBProcessor) sub_n(opcode byte, params ...byte) {
 
 }
 
-// Mnemonic: SUB C
+// Mnemonic: SBC A,n
+//  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z1hc
-func (p *GBProcessor) sub_c(opcode byte, params ...byte) {
+func (p *GBProcessor) sbc_n(opcode byte, params ...byte) {
 
 }
 
-// Mnemonic: SUB D
-// Sets Flags: z1hc
-func (p *GBProcessor) sub_d(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SUB E
-// Sets Flags: z1hc
-func (p *GBProcessor) sub_e(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SUB H
-// Sets Flags: z1hc
-func (p *GBProcessor) sub_h(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SUB L
-// Sets Flags: z1hc
-func (p *GBProcessor) sub_l(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SUB (HL)
-// Sets Flags: z1hc
-func (p *GBProcessor) sub_xhl(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SUB A
-// Sets Flags: z1hc
-func (p *GBProcessor) sub_a(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SBC A,B
-// Sets Flags: z1hc
-func (p *GBProcessor) sbc_ab(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SBC A,C
-// Sets Flags: z1hc
-func (p *GBProcessor) sbc_ac(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SBC A,D
-// Sets Flags: z1hc
-func (p *GBProcessor) sbc_ad(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SBC A,E
-// Sets Flags: z1hc
-func (p *GBProcessor) sbc_ae(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SBC A,H
-// Sets Flags: z1hc
-func (p *GBProcessor) sbc_ah(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SBC A,L
-// Sets Flags: z1hc
-func (p *GBProcessor) sbc_al(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SBC A,(HL)
-// Sets Flags: z1hc
-func (p *GBProcessor) sbc_axhl(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SBC A,A
-// Sets Flags: z1hc
-func (p *GBProcessor) sbc_aa(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: AND B
+// Mnemonic: AND n
+//  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z010
-func (p *GBProcessor) and_b(opcode byte, params ...byte) {
+func (p *GBProcessor) and_n(opcode byte, params ...byte) {
+	var val *uint8
+	var f uint8
 
+	switch opcode {
+	case 0xA7:
+		val = &p.regs.A
+	case 0xA0:
+		val = &p.regs.B
+	case 0xA1:
+		val = &p.regs.C
+	case 0xA2:
+		val = &p.regs.D
+	case 0xA3:
+		val = &p.regs.E
+	case 0xA4:
+		val = &p.regs.H
+	case 0xA5:
+		val = &p.regs.L
+	case 0xA6:
+		v := p.readAddress(p.regs.HL())
+		val = &v
+	case 0xE6:
+		val = &params[0]
+	}
+
+	p.regs.A = p.regs.A & *val
+
+	if p.regs.A == 0 {
+		f |= GBFlagZero
+	}
+	f |= GBFlagHalfCarry
 }
 
-// Mnemonic: AND C
-// Sets Flags: z010
-func (p *GBProcessor) and_c(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: AND D
-// Sets Flags: z010
-func (p *GBProcessor) and_d(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: AND E
-// Sets Flags: z010
-func (p *GBProcessor) and_e(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: AND H
-// Sets Flags: z010
-func (p *GBProcessor) and_h(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: AND L
-// Sets Flags: z010
-func (p *GBProcessor) and_l(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: AND (HL)
-// Sets Flags: z010
-func (p *GBProcessor) and_xhl(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: AND A
-// Sets Flags: z010
-func (p *GBProcessor) and_a(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: XOR B
+// Mnemonic: XOR n
+//  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z000
-func (p *GBProcessor) xor_b(opcode byte, params ...byte) {
+func (p *GBProcessor) xor_n(opcode byte, params ...byte) {
+	var val *uint8
+	var f uint8
 
+	switch opcode {
+	case 0xAF:
+		val = &p.regs.A
+	case 0xA8:
+		val = &p.regs.B
+	case 0xA9:
+		val = &p.regs.C
+	case 0xAA:
+		val = &p.regs.D
+	case 0xAB:
+		val = &p.regs.E
+	case 0xAC:
+		val = &p.regs.H
+	case 0xAD:
+		val = &p.regs.L
+	case 0xAE:
+		v := p.readAddress(p.regs.HL())
+		val = &v
+	case 0xEE:
+		val = &params[0]
+	}
+
+	p.regs.A = p.regs.A ^ *val
+
+	if p.regs.A == 0 {
+		f |= GBFlagZero
+	}
 }
 
-// Mnemonic: XOR C
+// Mnemonic: OR n
+//  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z000
-func (p *GBProcessor) xor_c(opcode byte, params ...byte) {
+func (p *GBProcessor) or_n(opcode byte, params ...byte) {
+	var val *uint8
+	var f uint8
 
+	switch opcode {
+	case 0xB7:
+		val = &p.regs.A
+	case 0xB0:
+		val = &p.regs.B
+	case 0xB1:
+		val = &p.regs.C
+	case 0xB2:
+		val = &p.regs.D
+	case 0xB3:
+		val = &p.regs.E
+	case 0xB4:
+		val = &p.regs.H
+	case 0xB5:
+		val = &p.regs.L
+	case 0xB6:
+		v := p.readAddress(p.regs.HL())
+		val = &v
+	case 0xF6:
+		val = &params[0]
+	}
+
+	p.regs.A = p.regs.A | *val
+
+	if p.regs.A == 0 {
+		f |= GBFlagZero
+	}
 }
 
-// Mnemonic: XOR D
-// Sets Flags: z000
-func (p *GBProcessor) xor_d(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: XOR E
-// Sets Flags: z000
-func (p *GBProcessor) xor_e(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: XOR H
-// Sets Flags: z000
-func (p *GBProcessor) xor_h(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: XOR L
-// Sets Flags: z000
-func (p *GBProcessor) xor_l(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: XOR (HL)
-// Sets Flags: z000
-func (p *GBProcessor) xor_xhl(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: XOR A
-// Sets Flags: z000
-func (p *GBProcessor) xor_a(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: OR B
-// Sets Flags: z000
-func (p *GBProcessor) or_b(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: OR C
-// Sets Flags: z000
-func (p *GBProcessor) or_c(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: OR D
-// Sets Flags: z000
-func (p *GBProcessor) or_d(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: OR E
-// Sets Flags: z000
-func (p *GBProcessor) or_e(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: OR H
-// Sets Flags: z000
-func (p *GBProcessor) or_h(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: OR L
-// Sets Flags: z000
-func (p *GBProcessor) or_l(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: OR (HL)
-// Sets Flags: z000
-func (p *GBProcessor) or_xhl(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: OR A
-// Sets Flags: z000
-func (p *GBProcessor) or_a(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: CP B
+// Mnemonic: CP n
+//  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z1hc
-func (p *GBProcessor) cp_b(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: CP C
-// Sets Flags: z1hc
-func (p *GBProcessor) cp_c(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: CP D
-// Sets Flags: z1hc
-func (p *GBProcessor) cp_d(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: CP E
-// Sets Flags: z1hc
-func (p *GBProcessor) cp_e(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: CP H
-// Sets Flags: z1hc
-func (p *GBProcessor) cp_h(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: CP L
-// Sets Flags: z1hc
-func (p *GBProcessor) cp_l(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: CP (HL)
-// Sets Flags: z1hc
-func (p *GBProcessor) cp_xhl(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: CP A
-// Sets Flags: z1hc
-func (p *GBProcessor) cp_a(opcode byte, params ...byte) {
+func (p *GBProcessor) cp_n(opcode byte, params ...byte) {
 
 }
 
@@ -811,12 +608,6 @@ func (p *GBProcessor) call_nzi(opcode byte, params ...byte) {
 // Mnemonic: PUSH BC
 // Sets Flags: ----
 func (p *GBProcessor) push_bc(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADD A,d8
-// Sets Flags: z0hc
-func (p *GBProcessor) add_ai(opcode byte, params ...byte) {
 
 }
 
@@ -862,12 +653,6 @@ func (p *GBProcessor) call_i(opcode byte, params ...byte) {
 
 }
 
-// Mnemonic: ADC A,d8
-// Sets Flags: z0hc
-func (p *GBProcessor) adc_ai(opcode byte, params ...byte) {
-
-}
-
 // Mnemonic: RST 08H
 // Sets Flags: ----
 func (p *GBProcessor) rst_08h(opcode byte, params ...byte) {
@@ -904,12 +689,6 @@ func (p *GBProcessor) push_de(opcode byte, params ...byte) {
 
 }
 
-// Mnemonic: SUB d8
-// Sets Flags: z1hc
-func (p *GBProcessor) sub_i(opcode byte, params ...byte) {
-
-}
-
 // Mnemonic: RST 10H
 // Sets Flags: ----
 func (p *GBProcessor) rst_10h(opcode byte, params ...byte) {
@@ -937,12 +716,6 @@ func (p *GBProcessor) jp_ci(opcode byte, params ...byte) {
 // Mnemonic: CALL C,a16
 // Sets Flags: ----
 func (p *GBProcessor) call_ci(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SBC A,d8
-// Sets Flags: z1hc
-func (p *GBProcessor) sbc_ai(opcode byte, params ...byte) {
 
 }
 
@@ -976,12 +749,6 @@ func (p *GBProcessor) push_hl(opcode byte, params ...byte) {
 
 }
 
-// Mnemonic: AND d8
-// Sets Flags: z010
-func (p *GBProcessor) and_i(opcode byte, params ...byte) {
-
-}
-
 // Mnemonic: RST 20H
 // Sets Flags: ----
 func (p *GBProcessor) rst_20h(opcode byte, params ...byte) {
@@ -1003,12 +770,6 @@ func (p *GBProcessor) jp_xhl(opcode byte, params ...byte) {
 // Mnemonic: LD (a16),A
 // Sets Flags: ----
 func (p *GBProcessor) ld_xia(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: XOR d8
-// Sets Flags: z000
-func (p *GBProcessor) xor_i(opcode byte, params ...byte) {
 
 }
 
@@ -1048,12 +809,6 @@ func (p *GBProcessor) push_af(opcode byte, params ...byte) {
 
 }
 
-// Mnemonic: OR d8
-// Sets Flags: z000
-func (p *GBProcessor) or_i(opcode byte, params ...byte) {
-
-}
-
 // Mnemonic: RST 30H
 // Sets Flags: ----
 func (p *GBProcessor) rst_30h(opcode byte, params ...byte) {
@@ -1081,12 +836,6 @@ func (p *GBProcessor) ld_axi(opcode byte, params ...byte) {
 // Mnemonic: EI
 // Sets Flags: ----
 func (p *GBProcessor) ei(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: CP d8
-// Sets Flags: z1hc
-func (p *GBProcessor) cp_i(opcode byte, params ...byte) {
 
 }
 
