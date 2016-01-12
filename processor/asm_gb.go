@@ -452,41 +452,40 @@ func (p *GBProcessor) ld_rr(opcode byte, params ...byte) {
 //  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z0hc
 func (p *GBProcessor) add_an(opcode byte, params ...byte) {
-	var val *uint8
+	var val uint8
 	var f uint8
 
 	switch opcode {
 	case 0x87:
-		val = &p.regs.A
+		val = p.regs.A
 	case 0x80:
-		val = &p.regs.B
+		val = p.regs.B
 	case 0x81:
-		val = &p.regs.C
+		val = p.regs.C
 	case 0x82:
-		val = &p.regs.D
+		val = p.regs.D
 	case 0x83:
-		val = &p.regs.E
+		val = p.regs.E
 	case 0x84:
-		val = &p.regs.H
+		val = p.regs.H
 	case 0x85:
-		val = &p.regs.L
+		val = p.regs.L
 	case 0x86:
-		v := p.readAddress(p.regs.HL())
-		val = &v
+		val = p.readAddress(p.regs.HL())
 	case 0xC6:
-		val = &params[0]
+		val = params[0]
 	}
 
-	res16Bit := uint16(*val) + uint16(p.regs.A)
+	res16Bit := uint16(val) + uint16(p.regs.A)
 	if res16Bit&0x100 > 0 {
 		f |= GBFlagCarry
 	}
 
-	if ((*val&0xF)+(p.regs.A&0xF))&0x10 > 0 {
+	if ((val&0xF)+(p.regs.A&0xF))&0x10 > 0 {
 		f |= GBFlagHalfCarry
 	}
 
-	p.regs.A = *val + p.regs.A
+	p.regs.A = val + p.regs.A
 	if p.regs.A == 0 {
 		f |= GBFlagZero
 	}
@@ -517,32 +516,31 @@ func (p *GBProcessor) sbc_n(opcode byte, params ...byte) {
 //  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z010
 func (p *GBProcessor) and_n(opcode byte, params ...byte) {
-	var val *uint8
+	var val uint8
 	var f uint8
 
 	switch opcode {
 	case 0xA7:
-		val = &p.regs.A
+		val = p.regs.A
 	case 0xA0:
-		val = &p.regs.B
+		val = p.regs.B
 	case 0xA1:
-		val = &p.regs.C
+		val = p.regs.C
 	case 0xA2:
-		val = &p.regs.D
+		val = p.regs.D
 	case 0xA3:
-		val = &p.regs.E
+		val = p.regs.E
 	case 0xA4:
-		val = &p.regs.H
+		val = p.regs.H
 	case 0xA5:
-		val = &p.regs.L
+		val = p.regs.L
 	case 0xA6:
-		v := p.readAddress(p.regs.HL())
-		val = &v
+		val = p.readAddress(p.regs.HL())
 	case 0xE6:
-		val = &params[0]
+		val = params[0]
 	}
 
-	p.regs.A = p.regs.A & *val
+	p.regs.A = p.regs.A & val
 
 	if p.regs.A == 0 {
 		f |= GBFlagZero
@@ -555,32 +553,31 @@ func (p *GBProcessor) and_n(opcode byte, params ...byte) {
 //  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z000
 func (p *GBProcessor) xor_n(opcode byte, params ...byte) {
-	var val *uint8
+	var val uint8
 	var f uint8
 
 	switch opcode {
 	case 0xAF:
-		val = &p.regs.A
+		val = p.regs.A
 	case 0xA8:
-		val = &p.regs.B
+		val = p.regs.B
 	case 0xA9:
-		val = &p.regs.C
+		val = p.regs.C
 	case 0xAA:
-		val = &p.regs.D
+		val = p.regs.D
 	case 0xAB:
-		val = &p.regs.E
+		val = p.regs.E
 	case 0xAC:
-		val = &p.regs.H
+		val = p.regs.H
 	case 0xAD:
-		val = &p.regs.L
+		val = p.regs.L
 	case 0xAE:
-		v := p.readAddress(p.regs.HL())
-		val = &v
+		val = p.readAddress(p.regs.HL())
 	case 0xEE:
-		val = &params[0]
+		val = params[0]
 	}
 
-	p.regs.A = p.regs.A ^ *val
+	p.regs.A = p.regs.A ^ val
 
 	if p.regs.A == 0 {
 		f |= GBFlagZero
@@ -591,32 +588,31 @@ func (p *GBProcessor) xor_n(opcode byte, params ...byte) {
 //  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z000
 func (p *GBProcessor) or_n(opcode byte, params ...byte) {
-	var val *uint8
+	var val uint8
 	var f uint8
 
 	switch opcode {
 	case 0xB7:
-		val = &p.regs.A
+		val = p.regs.A
 	case 0xB0:
-		val = &p.regs.B
+		val = p.regs.B
 	case 0xB1:
-		val = &p.regs.C
+		val = p.regs.C
 	case 0xB2:
-		val = &p.regs.D
+		val = p.regs.D
 	case 0xB3:
-		val = &p.regs.E
+		val = p.regs.E
 	case 0xB4:
-		val = &p.regs.H
+		val = p.regs.H
 	case 0xB5:
-		val = &p.regs.L
+		val = p.regs.L
 	case 0xB6:
-		v := p.readAddress(p.regs.HL())
-		val = &v
+		val = p.readAddress(p.regs.HL())
 	case 0xF6:
-		val = &params[0]
+		val = params[0]
 	}
 
-	p.regs.A = p.regs.A | *val
+	p.regs.A = p.regs.A | val
 
 	if p.regs.A == 0 {
 		f |= GBFlagZero
