@@ -3,10 +3,10 @@ package processor
 
 const (
 	GBFlagCarry     uint8 = 1 << 4
-	GBFlagHalfCarry       = 1 << 5
-	GBFlagSubtract        = 1 << 6
-	GBFlagZero            = 1 << 7
-	GBFlagMask            = 0xF0
+	GBFlagHalfCarry uint8 = 1 << 5
+	GBFlagSubtract  uint8 = 1 << 6
+	GBFlagZero      uint8 = 1 << 7
+	GBFlagMask      uint8 = 0xF0
 )
 
 type GBRegisters struct {
