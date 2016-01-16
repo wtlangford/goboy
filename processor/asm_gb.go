@@ -485,31 +485,147 @@ func (p *GBProcessor) add_an(opcode byte, params ...byte) {
 		f |= GBFlagHalfCarry
 	}
 
-	p.regs.A = val + p.regs.A
+	p.regs.A += val
 	if p.regs.A == 0 {
 		f |= GBFlagZero
 	}
+
+	p.regs.F = f
 }
 
 // Mnemonic: ADC A,n
 //  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z0hc
 func (p *GBProcessor) adc_n(opcode byte, params ...byte) {
+	var val, carry uint8
+	var f uint8
 
+	switch opcode {
+	case 0x85:
+		val = p.regs.A
+	case 0x88:
+		val = p.regs.B
+	case 0x89:
+		val = p.regs.C
+	case 0x8A:
+		val = p.regs.D
+	case 0x8B:
+		val = p.regs.E
+	case 0x8C:
+		val = p.regs.H
+	case 0x8D:
+		val = p.regs.L
+	case 0x8E:
+		val = p.readAddress(p.regs.HL())
+	case 0xCE:
+		val = params[0]
+	}
+
+	carry = (p.regs.F & GBFlagCarry) / GBFlagCarry
+	val += carry
+
+	res16Bit := uint16(val) + uint16(p.regs.A)
+	if res16Bit&0x100 > 0 {
+		f |= GBFlagCarry
+	}
+
+	if ((val&0xF)+(p.regs.A&0xF))&0x10 > 0 {
+		f |= GBFlagHalfCarry
+	}
+
+	p.regs.A += val
+	if p.regs.A == 0 {
+		f |= GBFlagZero
+	}
+
+	p.regs.F = f
 }
 
 // Mnemonic: SUB A,n
 //  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z1hc
 func (p *GBProcessor) sub_n(opcode byte, params ...byte) {
+	var val uint8
+	var f uint8 = GBFlagSubtract
 
+	switch opcode {
+	case 0x97:
+		val = p.regs.A
+	case 0x90:
+		val = p.regs.B
+	case 0x91:
+		val = p.regs.C
+	case 0x92:
+		val = p.regs.D
+	case 0x93:
+		val = p.regs.E
+	case 0x94:
+		val = p.regs.H
+	case 0x95:
+		val = p.regs.L
+	case 0x96:
+		val = p.readAddress(p.regs.HL())
+	case 0xD6:
+		val = params[0]
+	}
+
+	if p.regs.A&0xF >= val&0xF {
+		f |= GBFlagHalfCarry
+	}
+	if p.regs.A >= val {
+		f |= GBFlagCarry
+	}
+
+	p.regs.A -= val
+	if p.regs.A == 0 {
+		f |= GBFlagZero
+	}
+	p.regs.F = f
 }
 
 // Mnemonic: SBC A,n
 //  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z1hc
 func (p *GBProcessor) sbc_n(opcode byte, params ...byte) {
+	var val, carry uint8
+	var f uint8 = GBFlagSubtract
 
+	switch opcode {
+	case 0x9F:
+		val = p.regs.A
+	case 0x98:
+		val = p.regs.B
+	case 0x99:
+		val = p.regs.C
+	case 0x9A:
+		val = p.regs.D
+	case 0x9B:
+		val = p.regs.E
+	case 0x9C:
+		val = p.regs.H
+	case 0x9D:
+		val = p.regs.L
+	case 0x9E:
+		val = p.readAddress(p.regs.HL())
+	case 0xDE:
+		val = params[0]
+	}
+
+	carry = (p.regs.F & GBFlagCarry) / GBFlagCarry
+	val += carry
+
+	if p.regs.A&0xF >= val&0xF {
+		f |= GBFlagHalfCarry
+	}
+	if p.regs.A >= val {
+		f |= GBFlagCarry
+	}
+
+	p.regs.A -= val
+	if p.regs.A == 0 {
+		f |= GBFlagZero
+	}
+	p.regs.F = f
 }
 
 // Mnemonic: AND n
@@ -547,6 +663,7 @@ func (p *GBProcessor) and_n(opcode byte, params ...byte) {
 	}
 
 	f |= GBFlagHalfCarry
+	p.regs.F = f
 }
 
 // Mnemonic: XOR n
@@ -582,6 +699,8 @@ func (p *GBProcessor) xor_n(opcode byte, params ...byte) {
 	if p.regs.A == 0 {
 		f |= GBFlagZero
 	}
+
+	p.regs.F = f
 }
 
 // Mnemonic: OR n
@@ -617,13 +736,49 @@ func (p *GBProcessor) or_n(opcode byte, params ...byte) {
 	if p.regs.A == 0 {
 		f |= GBFlagZero
 	}
+
+	p.regs.F = f
 }
 
 // Mnemonic: CP n
 //  n := A,B,C,D,E,H,L,(HL),#
 // Sets Flags: z1hc
 func (p *GBProcessor) cp_n(opcode byte, params ...byte) {
+	var val uint8
+	var f uint8 = GBFlagSubtract
 
+	switch opcode {
+	case 0xBF:
+		val = p.regs.A
+	case 0xB8:
+		val = p.regs.B
+	case 0xB9:
+		val = p.regs.C
+	case 0xBA:
+		val = p.regs.D
+	case 0xBB:
+		val = p.regs.E
+	case 0xBC:
+		val = p.regs.H
+	case 0xBD:
+		val = p.regs.L
+	case 0xBE:
+		val = p.readAddress(p.regs.HL())
+	case 0xFE:
+		val = params[0]
+	}
+
+	if p.regs.A&0xF >= val&0xF {
+		f |= GBFlagHalfCarry
+	}
+	if p.regs.A >= val {
+		f |= GBFlagCarry
+	}
+
+	if p.regs.A-val == 0 {
+		f |= GBFlagZero
+	}
+	p.regs.F = f
 }
 
 // Mnemonic: RET NZ
