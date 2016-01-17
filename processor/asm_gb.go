@@ -934,7 +934,7 @@ func (p *GBProcessor) rst_18h(opcode byte, params ...byte) {
 // Mnemonic: LDH (a8),A
 // Sets Flags: ----
 func (p *GBProcessor) ldh_xia(opcode byte, params ...byte) {
-
+	p.writeAddress(uint16(params[0])+0xFF00, p.regs.A)
 }
 
 // Mnemonic: POP HL
@@ -946,7 +946,7 @@ func (p *GBProcessor) pop_hl(opcode byte, params ...byte) {
 // Mnemonic: LD (C),A
 // Sets Flags: ----
 func (p *GBProcessor) ld_xca(opcode byte, params ...byte) {
-
+	p.writeAddress(uint16(p.regs.C)+0xFF00, p.regs.A)
 }
 
 // Mnemonic: PUSH HL
@@ -988,7 +988,7 @@ func (p *GBProcessor) rst_28h(opcode byte, params ...byte) {
 // Mnemonic: LDH A,(a8)
 // Sets Flags: ----
 func (p *GBProcessor) ldh_axi(opcode byte, params ...byte) {
-
+	p.regs.A = p.readAddress(uint16(params[0]) + 0xFF00)
 }
 
 // Mnemonic: POP AF
@@ -1000,7 +1000,7 @@ func (p *GBProcessor) pop_af(opcode byte, params ...byte) {
 // Mnemonic: LD A,(C)
 // Sets Flags: ----
 func (p *GBProcessor) ld_axc(opcode byte, params ...byte) {
-
+	p.regs.A = p.readAddress(uint16(p.regs.C) + 0xFF00)
 }
 
 // Mnemonic: DI
