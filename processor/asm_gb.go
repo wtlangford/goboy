@@ -335,7 +335,7 @@ func (p *GBProcessor) ld_axhli(opcode byte, params ...byte) {
 // Sets Flags: -11-
 func (p *GBProcessor) cpl(opcode byte, params ...byte) {
 	p.regs.A = ^p.regs.A
-	p.regs.F = GBFlagSubtract | GBFlagHalfCarry
+	p.regs.F |= GBFlagSubtract | GBFlagHalfCarry
 
 }
 
@@ -1332,49 +1332,39 @@ func (p *GBProcessor) cb_sra_a(opcode byte, params ...byte) {
 // Mnemonic: SWAP B
 // Sets Flags: z000
 func (p *GBProcessor) cb_swap_b(opcode byte, params ...byte) {
+	var val *uint8
+	var f uint8
 
-}
+	switch opcode {
+	case 0x37:
+		val = &p.regs.A
+	case 0x30:
+		val = &p.regs.B
+	case 0x31:
+		val = &p.regs.C
+	case 0x32:
+		val = &p.regs.D
+	case 0x33:
+		val = &p.regs.E
+	case 0x34:
+		val = &p.regs.H
+	case 0x35:
+		val = &p.regs.L
+	case 0x36:
+		v := p.readAddress(p.regs.HL())
+		val = &v
+	}
 
-// Mnemonic: SWAP C
-// Sets Flags: z000
-func (p *GBProcessor) cb_swap_c(opcode byte, params ...byte) {
+	*val = (*val&0x0F)<<4 | (*val&0xF0)>>4
 
-}
+	if *val == 0 {
+		f |= GBFlagZero
+	}
+	p.regs.F = f
 
-// Mnemonic: SWAP D
-// Sets Flags: z000
-func (p *GBProcessor) cb_swap_d(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SWAP E
-// Sets Flags: z000
-func (p *GBProcessor) cb_swap_e(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SWAP H
-// Sets Flags: z000
-func (p *GBProcessor) cb_swap_h(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SWAP L
-// Sets Flags: z000
-func (p *GBProcessor) cb_swap_l(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SWAP (HL)
-// Sets Flags: z000
-func (p *GBProcessor) cb_swap_xhl(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: SWAP A
-// Sets Flags: z000
-func (p *GBProcessor) cb_swap_a(opcode byte, params ...byte) {
-
+	if opcode == 0x36 {
+		p.writeAddress(p.regs.HL(), *val)
+	}
 }
 
 // Mnemonic: SRL B
