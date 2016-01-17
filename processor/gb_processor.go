@@ -61,9 +61,34 @@ func (p *GBProcessor) ProcessOpcode() {
 
 }
 
+func (p *GBProcessor) readAddress(addr uint16) uint8 {
+	return 0
+}
+
+func (p *GBProcessor) readAddress2(addr uint16) uint16 {
+	// GB is little endian
+	// Should be equivalent to
+	// uint16(p.readAddress(addr)) | uint16(p.readAddress(addr + 1) << 8)
+	return 0
+}
+
 func (p *GBProcessor) writeAddress(addr uint16, val uint8) {
 }
 
-func (p *GBProcessor) readAddress(addr uint16) uint8 {
-	return 0
+func (p *GBProcessor) writeAddress2(addr uint16, val uint16) {
+	// GB is little endian.
+	// Should be equivalent to:
+	// p.writeAddress(addr, uint8(val & 0xFF))
+	// p.writeAddress(addr+1, uint8(val >> 8))
+}
+
+func (p *GBProcessor) pushStack(val uint16) {
+	p.regs.SP -= 2
+	p.writeAddress2(p.regs.SP, val)
+}
+
+func (p *GBProcessor) popStack() uint16 {
+	val := p.readAddress2(p.regs.SP)
+	p.regs.SP += 2
+	return val
 }
