@@ -18,6 +18,10 @@ type GBRegisters struct {
 	PC   uint16
 }
 
+type GBState struct {
+	SlowStep bool
+}
+
 func (r *GBRegisters) AF() uint16 {
 	return (uint16(r.A) << 8) | uint16(r.F)
 }
@@ -55,6 +59,7 @@ type GBProcessor struct {
 	opcodes   []Opcode
 	cbOpcodes []Opcode
 	regs      GBRegisters
+	state     GBState
 }
 
 func (p *GBProcessor) ProcessOpcode() {

@@ -202,9 +202,33 @@ func (p *GBProcessor) ld_xisp(opcode byte, params ...byte) {
 
 }
 
-// Mnemonic: ADD HL,BC
+// Mnemonic: ADD HL,rr
+//  rr := BC,DE,HL,SP
 // Sets Flags: -0hc
-func (p *GBProcessor) add_hlbc(opcode byte, params ...byte) {
+func (p *GBProcessor) add_hlrr(opcode byte, params ...byte) {
+	var val uint16
+	f := p.regs.F & GBFlagZero
+	hl := p.regs.HL()
+	switch opcode {
+	case 0x09:
+		val = p.regs.BC()
+	case 0x19:
+		val = p.regs.DE()
+	case 0x29:
+		val = p.regs.HL()
+	case 0x39:
+		val = p.regs.SP
+	}
+
+	res32 := uint32(val) + uint32(hl)
+	if res32 > 0xFFFF {
+		f |= GBFlagCarry
+	}
+	if (val&0xFFF)+(hl&0xFFF) > 0xFFF {
+		f |= GBFlagHalfCarry
+	}
+	p.regs.SetHL(val + hl)
+	p.regs.F = f
 
 }
 
@@ -254,7 +278,7 @@ func (p *GBProcessor) rrca(opcode byte, params ...byte) {
 // Mnemonic: STOP 0
 // Sets Flags: ----
 func (p *GBProcessor) stop_0(opcode byte, params ...byte) {
-
+	// TODO
 }
 
 // Mnemonic: RLA
@@ -278,13 +302,8 @@ func (p *GBProcessor) rla(opcode byte, params ...byte) {
 // Mnemonic: JR r8
 // Sets Flags: ----
 func (p *GBProcessor) jr_i(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADD HL,DE
-// Sets Flags: -0hc
-func (p *GBProcessor) add_hlde(opcode byte, params ...byte) {
-
+	offset := int16(int8(params[0]))
+	p.regs.PC = uint16(int16(p.regs.PC) + offset)
 }
 
 // Mnemonic: RRA
@@ -305,10 +324,26 @@ func (p *GBProcessor) rra(opcode byte, params ...byte) {
 	p.regs.A = (p.regs.A >> 1) | high
 }
 
-// Mnemonic: JR NZ,r8
+// Mnemonic: JR cc,r8
+//  cc := NZ,Z,NC,C
 // Sets Flags: ----
-func (p *GBProcessor) jr_nzi(opcode byte, params ...byte) {
-
+func (p *GBProcessor) jr_cci(opcode byte, params ...byte) {
+	offset := int16(int8(params[0]))
+	var jmp bool
+	switch opcode {
+	case 0x20:
+		jmp = p.regs.F&GBFlagZero == 0
+	case 0x28:
+		jmp = p.regs.F&GBFlagZero != 0
+	case 0x30:
+		jmp = p.regs.F&GBFlagCarry == 0
+	case 0x38:
+		jmp = p.regs.F&GBFlagCarry != 0
+	}
+	if jmp {
+		p.regs.PC = uint16(int16(p.regs.PC) + offset)
+		p.state.SlowStep = true
+	}
 }
 
 // Mnemonic: DAA
@@ -349,18 +384,6 @@ func (p *GBProcessor) daa(opcode byte, params ...byte) {
 	p.regs.F = f
 }
 
-// Mnemonic: JR Z,r8
-// Sets Flags: ----
-func (p *GBProcessor) jr_zi(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADD HL,HL
-// Sets Flags: -0hc
-func (p *GBProcessor) add_hlhl(opcode byte, params ...byte) {
-
-}
-
 // Mnemonic: LD A,(HL+)
 // Sets Flags: ----
 func (p *GBProcessor) ld_axhli(opcode byte, params ...byte) {
@@ -376,12 +399,6 @@ func (p *GBProcessor) cpl(opcode byte, params ...byte) {
 
 }
 
-// Mnemonic: JR NC,r8
-// Sets Flags: ----
-func (p *GBProcessor) jr_nci(opcode byte, params ...byte) {
-
-}
-
 // Mnemonic: LD (HL),d8
 // Sets Flags: ----
 func (p *GBProcessor) ld_xhli(opcode byte, params ...byte) {
@@ -393,18 +410,6 @@ func (p *GBProcessor) ld_xhli(opcode byte, params ...byte) {
 func (p *GBProcessor) scf(opcode byte, params ...byte) {
 	p.regs.F |= GBFlagCarry
 	p.regs.F &= ^(GBFlagSubtract | GBFlagHalfCarry)
-}
-
-// Mnemonic: JR C,r8
-// Sets Flags: ----
-func (p *GBProcessor) jr_ci(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: ADD HL,SP
-// Sets Flags: -0hc
-func (p *GBProcessor) add_hlsp(opcode byte, params ...byte) {
-
 }
 
 // Mnemonic: LD A,(HL-)
@@ -424,7 +429,7 @@ func (p *GBProcessor) ccf(opcode byte, params ...byte) {
 // Mnemonic: HALT
 // Sets Flags: ----
 func (p *GBProcessor) halt(opcode byte, params ...byte) {
-
+	// TODO
 }
 
 // Mnemonic: LD r1,r2
@@ -807,16 +812,10 @@ func (p *GBProcessor) cp_n(opcode byte, params ...byte) {
 	p.regs.F = f
 }
 
-// Mnemonic: RET NZ
-// Sets Flags: ----
-func (p *GBProcessor) ret_nz(opcode byte, params ...byte) {
-
-}
-
 // Mnemonic: POP rr
 //  rr := AF,BC,DE,HL
 // Sets Flags: ----
-func (p *GBProcessor) pop(opcode byte, params ...byte) {
+func (p *GBProcessor) pop_rr(opcode byte, params ...byte) {
 	switch opcode {
 	case 0xf1:
 		p.regs.SetAF(p.popStack())
@@ -829,100 +828,95 @@ func (p *GBProcessor) pop(opcode byte, params ...byte) {
 	}
 }
 
-// Mnemonic: JP NZ,a16
+// Mnemonic: JP cc,a16
+//  rr := NZ,Z,NC,C
 // Sets Flags: ----
-func (p *GBProcessor) jp_nzi(opcode byte, params ...byte) {
-
+func (p *GBProcessor) jp_cci(opcode byte, params ...byte) {
+	var jump bool
+	addr := uint16(params[0]) | uint16(params[1])<<8
+	switch opcode {
+	case 0xC2:
+		jump = p.regs.F&GBFlagZero == 0
+	case 0xCA:
+		jump = p.regs.F&GBFlagZero != 0
+	case 0xD2:
+		jump = p.regs.F&GBFlagCarry == 0
+	case 0xDA:
+		jump = p.regs.F&GBFlagCarry != 0
+	}
+	if jump {
+		p.regs.PC = addr
+		p.state.SlowStep = true
+	}
 }
 
 // Mnemonic: JP a16
 // Sets Flags: ----
 func (p *GBProcessor) jp_i(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: CALL NZ,a16
-// Sets Flags: ----
-func (p *GBProcessor) call_nzi(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: RET Z
-// Sets Flags: ----
-func (p *GBProcessor) ret_z(opcode byte, params ...byte) {
-
+	p.regs.PC = uint16(params[0]) | uint16(params[1])<<8
 }
 
 // Mnemonic: RET
 // Sets Flags: ----
 func (p *GBProcessor) ret(opcode byte, params ...byte) {
-
+	p.regs.PC = p.popStack()
 }
 
-// Mnemonic: JP Z,a16
+// Mnemonic: CALL cc,a16
+//  cc := NZ,Z,NC,C
 // Sets Flags: ----
-func (p *GBProcessor) jp_zi(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: PREFIX CB
-// Sets Flags: ----
-func (p *GBProcessor) prefix_cb(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: CALL Z,a16
-// Sets Flags: ----
-func (p *GBProcessor) call_zi(opcode byte, params ...byte) {
-
+func (p *GBProcessor) call_cci(opcode byte, params ...byte) {
+	var jump bool
+	switch opcode {
+	case 0xc4:
+		jump = p.regs.F&GBFlagZero == 0
+	case 0xcc:
+		jump = p.regs.F&GBFlagZero != 0
+	case 0xd4:
+		jump = p.regs.F&GBFlagCarry == 0
+	case 0xdc:
+		jump = p.regs.F&GBFlagCarry != 0
+	}
+	if jump {
+		p.pushStack(p.regs.PC)
+		p.regs.PC = uint16(params[0]) | uint16(params[1])<<8
+		p.state.SlowStep = true
+	}
 }
 
 // Mnemonic: CALL a16
 // Sets Flags: ----
 func (p *GBProcessor) call_i(opcode byte, params ...byte) {
-
+	p.pushStack(p.regs.PC)
+	p.regs.PC = uint16(params[0]) | uint16(params[1])<<8
 }
 
-// Mnemonic: RET NC
+// Mnemonic: RET cc
+//  cc := NZ,Z,NC,C
 // Sets Flags: ----
-func (p *GBProcessor) ret_nc(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: JP NC,a16
-// Sets Flags: ----
-func (p *GBProcessor) jp_nci(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: CALL NC,a16
-// Sets Flags: ----
-func (p *GBProcessor) call_nci(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: RET C
-// Sets Flags: ----
-func (p *GBProcessor) ret_c(opcode byte, params ...byte) {
-
+func (p *GBProcessor) ret_cc(opcode byte, params ...byte) {
+	var jump bool
+	switch opcode {
+	case 0xc0:
+		jump = p.regs.F&GBFlagZero == 0
+	case 0xc8:
+		jump = p.regs.F&GBFlagZero != 0
+	case 0xd0:
+		jump = p.regs.F&GBFlagCarry == 0
+	case 0xd8:
+		jump = p.regs.F&GBFlagCarry != 0
+	}
+	if jump {
+		p.regs.PC = p.popStack()
+		p.state.SlowStep = true
+	}
 }
 
 // Mnemonic: RETI
 // Sets Flags: ----
 func (p *GBProcessor) reti(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: JP C,a16
-// Sets Flags: ----
-func (p *GBProcessor) jp_ci(opcode byte, params ...byte) {
-
-}
-
-// Mnemonic: CALL C,a16
-// Sets Flags: ----
-func (p *GBProcessor) call_ci(opcode byte, params ...byte) {
-
+	p.regs.PC = p.popStack()
+	// TODO - Interrupts
 }
 
 // Mnemonic: LDH (a8),A
@@ -940,19 +934,32 @@ func (p *GBProcessor) ld_xca(opcode byte, params ...byte) {
 // Mnemonic: ADD SP,r8
 // Sets Flags: 00hc
 func (p *GBProcessor) add_spi(opcode byte, params ...byte) {
+	val := uint16(int16(int8(params[0])))
+	var f uint8
+	sp := p.regs.SP
 
+	res32 := uint32(val) + uint32(sp)
+	if res32 > 0xFFFF {
+		f |= GBFlagCarry
+	}
+	if (val&0xFFF)+(sp&0xFFF) > 0xFFF {
+		f |= GBFlagHalfCarry
+	}
+	p.regs.SP += val
+	p.regs.F = f
 }
 
 // Mnemonic: JP (HL)
 // Sets Flags: ----
 func (p *GBProcessor) jp_xhl(opcode byte, params ...byte) {
-
+	p.regs.PC = p.readAddress2(p.regs.HL())
 }
 
 // Mnemonic: LD (a16),A
 // Sets Flags: ----
 func (p *GBProcessor) ld_xia(opcode byte, params ...byte) {
-
+	addr := uint16(params[0]) | uint16(params[1])<<8
+	p.writeAddress(addr, p.regs.A)
 }
 
 // Mnemonic: LDH A,(a8)
@@ -970,7 +977,7 @@ func (p *GBProcessor) ld_axc(opcode byte, params ...byte) {
 // Mnemonic: DI
 // Sets Flags: ----
 func (p *GBProcessor) di(opcode byte, params ...byte) {
-
+	// TODO
 }
 
 // Mnemonic: PUSH rr
@@ -1049,7 +1056,7 @@ func (p *GBProcessor) ld_axi(opcode byte, params ...byte) {
 // Mnemonic: EI
 // Sets Flags: ----
 func (p *GBProcessor) ei(opcode byte, params ...byte) {
-
+	// TODO
 }
 
 // Mnemonic: RLC r
