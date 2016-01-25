@@ -20,6 +20,7 @@ type GBRegisters struct {
 
 type GBState struct {
 	SlowStep bool
+	IME      bool
 }
 
 func (r *GBRegisters) AF() uint16 {
@@ -60,6 +61,10 @@ type GBProcessor struct {
 	cbOpcodes []Opcode
 	regs      GBRegisters
 	state     GBState
+
+	internalRAM [0x2000]byte // 8kB
+	highRAM     [127]byte
+	interrupts  byte
 }
 
 func (p *GBProcessor) ProcessOpcode() {
@@ -67,24 +72,77 @@ func (p *GBProcessor) ProcessOpcode() {
 }
 
 func (p *GBProcessor) readAddress(addr uint16) uint8 {
+	switch {
+	case addr < 0x8000:
+		// FORWARD TO CARTRIDGE
+		// ROM BANK 0 | Switchable ROM bank
+	case addr < 0xA000: // Video RAM
+		// FORWARD TO GPU
+		// Video RAM
+	case addr < 0xC000: // Switchable RAM
+		// FORWARD TO CARTRIDGE
+		// Switchable RAM bank
+	case addr < 0xE000: // Internal RAM
+		return uint8(p.internalRAM[0xE000-addr])
+	case addr < 0xFE00: // Shadow RAM
+		return uint8(p.internalRAM[0xFE00-addr])
+	case addr < 0xFEA0: // Sprite Attribute Memory
+		// FORWARD TO GPU
+		// Sprite Attribute Memory
+	case addr < 0xFF00: // Unused
+		// LOG THIS.  Probably an error.
+	case addr < 0xFF4C: // IO Registers
+		// FORWARD TO IO
+	case addr < 0xFF80: // Unused
+		// LOG THIS.  Probably an error.
+	case addr < 0xFFFF: // High RAM
+		return uint8(p.highRAM[0xFFFE-addr])
+	case addr == 0xFFFF: // Interrupt Control Register
+		return uint8(p.interrupts)
+	}
 	return 0
 }
 
 func (p *GBProcessor) readAddress2(addr uint16) uint16 {
 	// GB is little endian
-	// Should be equivalent to
-	// uint16(p.readAddress(addr)) | uint16(p.readAddress(addr + 1) << 8)
-	return 0
+	return uint16(p.readAddress(addr)) | uint16(p.readAddress(addr+1)<<8)
 }
 
 func (p *GBProcessor) writeAddress(addr uint16, val uint8) {
+	switch {
+	case addr < 0x8000: // Cartridge ROM - Control
+		// FORWARD TO CARTRIDGE
+		// This is cartridge bank control
+	case addr < 0xA000: // Video RAM
+		// FORWARD TO GPU
+		// Video RAM
+	case addr < 0xC000: // Cartridge RAM
+		// FORWARD TO CARTRIDGE
+		// Switchable RAM bank
+	case addr < 0xE000: // Internal Ram
+		p.internalRAM[0xE000-addr] = byte(val)
+	case addr < 0xFE00: // Shadow RAM
+		p.internalRAM[0xFE00-addr] = byte(val)
+	case addr < 0xFEA0: // Sprite Attribute Memory
+		// FORWARD TO GPU
+		// Sprite Attribute Memory
+	case addr < 0xFF00: // Unused
+		// LOG THIS.  Probably an error.
+	case addr < 0xFF4C: // IO Registers
+		// FORWARD TO IO
+	case addr < 0xFF80: // Unused
+		// LOG THIS.  Probably an error.
+	case addr < 0xFFFF: // High RAM
+		p.highRAM[0xFFFE-addr] = byte(val)
+	case addr == 0xFFFF: // Interrupt Control Register
+		p.interrupts = byte(val)
+	}
 }
 
 func (p *GBProcessor) writeAddress2(addr uint16, val uint16) {
 	// GB is little endian.
-	// Should be equivalent to:
-	// p.writeAddress(addr, uint8(val & 0xFF))
-	// p.writeAddress(addr+1, uint8(val >> 8))
+	p.writeAddress(addr, uint8(val&0xFF))
+	p.writeAddress(addr+1, uint8(val>>8))
 }
 
 func (p *GBProcessor) pushStack(val uint16) {
