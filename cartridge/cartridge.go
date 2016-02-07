@@ -9,5 +9,8 @@ type Cartridge interface {
 func NewCartridge(cartridgeROM []byte) Cartridge {
 	// Inspect ROM to identify Cartridge Type
 	// Instantiate that type
-	return NewRomOnlyCartridge(cartridgeROM)
+	switch cartridgeROM[0x147] {
+	default:
+		return nil
+	}
 }
