@@ -11,7 +11,7 @@ type RomOnlyCartridge struct {
 
 func NewRomOnlyCartridge(cartridgeROM []byte) *RomOnlyCartridge {
 	if len(cartridgeROM) > cartridgeSize {
-		panic(fmt.Sprintf("CartridgeROM is too big: is %d bytes", len(cartridgeROM)))
+		panic(fmt.Sprintf("Trying to load too big ROM of size %d into ROM Only Cartridge", len(cartridgeROM)))
 	}
 	c := RomOnlyCartridge{}
 	copy(c.rom[:], cartridgeROM)
@@ -19,12 +19,12 @@ func NewRomOnlyCartridge(cartridgeROM []byte) *RomOnlyCartridge {
 }
 
 func (c *RomOnlyCartridge) ReadAddress(addr uint8) byte {
-	if addr < 0 || int(addr) > len(c.rom) {
-		panic(fmt.Sprintf("Address %d is out of bounds", addr))
+	if int(addr) > len(c.rom) {
+		panic(fmt.Sprintf("Invalid read at address %d on ROM Only Cartridge", addr))
 	}
 	return c.rom[addr]
 }
 
 func (c *RomOnlyCartridge) WriteAddress(addr uint8, val uint8) {
-	panic(fmt.Sprintf("Illegal write in ROM Only Cartridge to address %d", addr))
+	panic(fmt.Sprintf("Invalid write to address %d on ROM Only Cartridge", addr))
 }
