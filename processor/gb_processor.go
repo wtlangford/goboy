@@ -21,6 +21,8 @@ type GBRegisters struct {
 type GBState struct {
 	SlowStep bool
 	IME      bool
+	MClock   uint
+	TClock   uint
 }
 
 func (r *GBRegisters) AF() uint16 {
@@ -67,7 +69,35 @@ type GBProcessor struct {
 	interrupts  byte
 }
 
-func (p *GBProcessor) ProcessOpcode() {
+func (p *GBProcessor) Step() {
+	var opcode Opcode
+	op := p.readAddress(p.regs.PC)
+	oplen := 1
+	if op == 0xCB {
+		op = p.readAddress(p.regs.PC + 1)
+		opcode = p.cbOpcodes[op]
+		oplen += 1
+	} else {
+		opcode = p.opcodes[op]
+	}
+	var plen int = int(opcode.ParamLen) - oplen
+
+	params := make([]byte, plen)
+
+	for i := 0; i < plen; i += 1 {
+		params[i] = p.readAddress(p.regs.PC + uint16(oplen+i))
+	}
+
+	opcode.Func(p, opcode.Opcode, params...)
+
+	if p.state.SlowStep {
+		p.state.MClock += uint(opcode.LongCycles)
+		p.state.TClock += 4 * uint(opcode.LongCycles)
+	} else {
+		p.state.MClock += uint(opcode.ShortCycles)
+		p.state.TClock += 4 * uint(opcode.ShortCycles)
+	}
+	p.state.SlowStep = false
 
 }
 
