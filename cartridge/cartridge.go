@@ -2,8 +2,8 @@
 package cartridge
 
 type Cartridge interface {
-	ReadAddress(addr uint8) byte
-	WriteAddress(addr uint8, val uint8)
+	ReadAddress(addr uint16) byte
+	WriteAddress(addr uint16, val uint8)
 }
 
 func NewCartridge(cartridgeROM []byte) Cartridge {

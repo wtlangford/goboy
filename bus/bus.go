@@ -4,16 +4,20 @@ package bus
 import (
 	"github.com/wtlangford/goboy/cartridge"
 	"github.com/wtlangford/goboy/gpu"
-	"github.com/wtlangford/goboy/processor"
 )
 
 type Bus struct {
-	gpu       GPU
-	cartridge Cartridge
-	processor Processor
+	gpu       *gpu.GPU
+	cartridge *cartridge.Cartridge
 
 	internalRAM [0x2000]byte // 8kB
 	highRAM     [127]byte
+
+	// TODO: Come up with a better way to do this.
+	// This really belongs to the processor, but we can't import
+	// that here because of import cycles.  Remove the cycle or
+	// convince self that this belongs here.
+	interrupts byte
 }
 
 func (b *Bus) readAddress(addr uint16) uint8 {
@@ -28,9 +32,9 @@ func (b *Bus) readAddress(addr uint16) uint8 {
 		// FORWARD TO CARTRIDGE
 		// Switchable RAM bank
 	case addr < 0xE000: // Internal RAM
-		return uint8(p.internalRAM[0xE000-addr])
+		return uint8(b.internalRAM[0xE000-addr])
 	case addr < 0xFE00: // Shadow RAM
-		return uint8(p.internalRAM[0xFE00-addr])
+		return uint8(b.internalRAM[0xFE00-addr])
 	case addr < 0xFEA0: // Sprite Attribute Memory
 		// FORWARD TO GPU
 		// Sprite Attribute Memory
@@ -41,14 +45,14 @@ func (b *Bus) readAddress(addr uint16) uint8 {
 	case addr < 0xFF80: // Unused
 		// LOG THIS.  Probably an error.
 	case addr < 0xFFFF: // High RAM
-		return uint8(p.highRAM[0xFFFE-addr])
+		return uint8(b.highRAM[0xFFFE-addr])
 	case addr == 0xFFFF: // Interrupt Control Register
-		return uint8(p.interrupts)
+		return uint8(b.interrupts)
 	}
 	return 0
 }
 
-func (b *Bus) writeAddress(addr uint16) uint8 {
+func (b *Bus) writeAddress(addr uint16, val uint8) {
 	switch {
 	case addr < 0x8000: // Cartridge ROM - Control
 		// FORWARD TO CARTRIDGE
@@ -60,9 +64,9 @@ func (b *Bus) writeAddress(addr uint16) uint8 {
 		// FORWARD TO CARTRIDGE
 		// Switchable RAM bank
 	case addr < 0xE000: // Internal Ram
-		p.internalRAM[0xE000-addr] = byte(val)
+		b.internalRAM[0xE000-addr] = byte(val)
 	case addr < 0xFE00: // Shadow RAM
-		p.internalRAM[0xFE00-addr] = byte(val)
+		b.internalRAM[0xFE00-addr] = byte(val)
 	case addr < 0xFEA0: // Sprite Attribute Memory
 		// FORWARD TO GPU
 		// Sprite Attribute Memory
@@ -73,8 +77,8 @@ func (b *Bus) writeAddress(addr uint16) uint8 {
 	case addr < 0xFF80: // Unused
 		// LOG THIS.  Probably an error.
 	case addr < 0xFFFF: // High RAM
-		p.highRAM[0xFFFE-addr] = byte(val)
+		b.highRAM[0xFFFE-addr] = byte(val)
 	case addr == 0xFFFF: // Interrupt Control Register
-		p.interrupts = byte(val)
+		b.interrupts = byte(val)
 	}
 }
