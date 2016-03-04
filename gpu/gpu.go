@@ -2,7 +2,7 @@
 package gpu
 
 type GPU interface {
-	ReadAddress(addr uint16) byte
+	ReadAddress(addr uint16) uint8
 	WriteAddress(addr uint16, val byte)
 	DMALoad(data []byte)
 	Step()

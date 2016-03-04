@@ -37,7 +37,7 @@ func NewMbc1Cartridge(cartridgeROM []byte) *Mbc1Cartridge {
 	return &c
 }
 
-func (c *Mbc1Cartridge) ReadAddress(addr uint16) byte {
+func (c *Mbc1Cartridge) ReadAddress(addr uint16) uint8 {
 	switch {
 	case addr < 0x4000:
 		return c.rom[addr]

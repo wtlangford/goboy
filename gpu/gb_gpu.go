@@ -25,7 +25,7 @@ type Window struct {
 	WindowY, WindowX uint8
 }
 
-func (g *GBGpu) ReadAddress(addr uint16) byte {
+func (g *GBGpu) ReadAddress(addr uint16) uint8 {
 	switch {
 	case addr >= 0x8000 && addr < 0xA000:
 		return g.vram[addr-0x8000]

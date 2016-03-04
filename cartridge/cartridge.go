@@ -2,7 +2,7 @@
 package cartridge
 
 type Cartridge interface {
-	ReadAddress(addr uint16) byte
+	ReadAddress(addr uint16) uint8
 	WriteAddress(addr uint16, val uint8)
 }
 

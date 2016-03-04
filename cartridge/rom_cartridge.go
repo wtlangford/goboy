@@ -18,7 +18,7 @@ func NewRomOnlyCartridge(cartridgeROM []byte) *RomOnlyCartridge {
 	return &c
 }
 
-func (c *RomOnlyCartridge) ReadAddress(addr uint8) byte {
+func (c *RomOnlyCartridge) ReadAddress(addr uint8) uint8 {
 	if int(addr) > len(c.rom) {
 		panic(fmt.Sprintf("Invalid read at address %d on ROM Only Cartridge", addr))
 	}
