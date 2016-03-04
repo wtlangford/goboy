@@ -1,5 +1,5 @@
 // vim: noet:ts=3:sw=3:sts=3
-package processor
+package gb
 
 type Opcode struct {
 	Opcode      byte

@@ -1,5 +1,5 @@
 // vim: noet:ts=3:sw=3:sts=3
-package processor
+package gb
 
 import "github.com/wtlangford/goboy/bus"
 
@@ -21,10 +21,11 @@ type GBRegisters struct {
 }
 
 type GBState struct {
-	SlowStep bool
-	IME      bool
-	MClock   uint
-	TClock   uint
+	SlowStep   bool
+	IME        bool
+	MClock     uint
+	TClock     uint
+	Interrupts byte
 }
 
 func (r *GBRegisters) AF() uint16 {
@@ -75,7 +76,7 @@ type GBProcessor struct {
 
 	interrupts byte
 
-	bus bus.Bus
+	bus bus.GBBus
 }
 
 func (p *GBProcessor) Step() {
@@ -112,8 +113,15 @@ func (p *GBProcessor) Step() {
 
 }
 
+func (p *GBProcessor) RunUntilVBlank() {
+	endClock := p.state.MClock + p.bus.Gpu.MClocksToVBlank()
+	for p.state.MClock < endClock {
+		p.Step()
+	}
+}
+
 func (p *GBProcessor) readAddress(addr uint16) uint8 {
-	return bus.readAddress(addr)
+	return p.bus.ReadAddress(addr)
 }
 
 func (p *GBProcessor) readAddress2(addr uint16) uint16 {
@@ -122,7 +130,7 @@ func (p *GBProcessor) readAddress2(addr uint16) uint16 {
 }
 
 func (p *GBProcessor) writeAddress(addr uint16, val uint8) {
-	bus.writeAddress(addr, val)
+	p.bus.WriteAddress(addr, val)
 }
 
 func (p *GBProcessor) writeAddress2(addr uint16, val uint16) {
@@ -140,4 +148,12 @@ func (p *GBProcessor) popStack() uint16 {
 	val := p.readAddress2(p.regs.SP)
 	p.regs.SP += 2
 	return val
+}
+
+func (p *GBProcessor) GetInterrupts() byte {
+	return p.state.Interrupts
+}
+
+func (p *GBProcessor) SetInterrupts(val byte) {
+	p.state.Interrupts = val
 }

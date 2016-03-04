@@ -4,35 +4,31 @@ package bus
 import (
 	"github.com/wtlangford/goboy/cartridge"
 	"github.com/wtlangford/goboy/gpu"
+	"github.com/wtlangford/goboy/processor"
 )
 
-type Bus struct {
-	gpu       gpu.GPU
-	cartridge cartridge.Cartridge
+type GBBus struct {
+	Gpu       gpu.GPU
+	Cartridge cartridge.Cartridge
+	Processor processor.Processor
 
 	internalRAM [0x2000]byte // 8kB
 	highRAM     [127]byte
-
-	// TODO: Come up with a better way to do this.
-	// This really belongs to the processor, but we can't import
-	// that here because of import cycles.  Remove the cycle or
-	// convince self that this belongs here.
-	interrupts byte
 }
 
-func (b *Bus) ReadAddress(addr uint16) uint8 {
+func (b *GBBus) ReadAddress(addr uint16) uint8 {
 	switch {
 	case addr < 0x8000: // ROM BANK 0 | Switchable ROM bank
 		// FORWARD TO CARTRIDGE
-		return b.cartridge.ReadAddress(addr)
+		return b.Cartridge.ReadAddress(addr)
 	case addr < 0xA000: // Video RAM
 		// FORWARD TO GPU
 		// Video RAM
-		return b.gpu.ReadAddress(addr)
+		return b.Gpu.ReadAddress(addr)
 	case addr < 0xC000: // Switchable RAM
 		// FORWARD TO CARTRIDGE
 		// Switchable RAM bank
-		return b.cartridge.ReadAddress(addr)
+		return b.Cartridge.ReadAddress(addr)
 	case addr < 0xE000: // Internal RAM
 		return uint8(b.internalRAM[0xE000-addr])
 	case addr < 0xFE00: // Shadow RAM
@@ -40,7 +36,7 @@ func (b *Bus) ReadAddress(addr uint16) uint8 {
 	case addr < 0xFEA0: // Sprite Attribute Memory
 		// FORWARD TO GPU
 		// Sprite Attribute Memory
-		return b.gpu.ReadAddress(addr)
+		return b.Gpu.ReadAddress(addr)
 	case addr < 0xFF00: // Unused
 		// LOG THIS.  Probably an error.
 	case addr < 0xFF4C: // IO Registers
@@ -50,25 +46,25 @@ func (b *Bus) ReadAddress(addr uint16) uint8 {
 	case addr < 0xFFFF: // High RAM
 		return uint8(b.highRAM[0xFFFE-addr])
 	case addr == 0xFFFF: // Interrupt Control Register
-		return uint8(b.interrupts)
+		return b.Processor.GetInterrupts()
 	}
 	return 0
 }
 
-func (b *Bus) WriteAddress(addr uint16, val uint8) {
+func (b *GBBus) WriteAddress(addr uint16, val uint8) {
 	switch {
 	case addr < 0x8000: // Cartridge ROM - Control
 		// FORWARD TO CARTRIDGE
 		// This is cartridge bank control
-		b.cartridge.WriteAddress(addr, val)
+		b.Cartridge.WriteAddress(addr, val)
 	case addr < 0xA000: // Video RAM
 		// FORWARD TO GPU
 		// Video RAM
-		b.gpu.WriteAddress(addr, val)
+		b.Gpu.WriteAddress(addr, val)
 	case addr < 0xC000: // Cartridge RAM
 		// FORWARD TO CARTRIDGE
 		// Switchable RAM bank
-		b.cartridge.WriteAddress(addr, val)
+		b.Cartridge.WriteAddress(addr, val)
 	case addr < 0xE000: // Internal Ram
 		b.internalRAM[0xE000-addr] = byte(val)
 	case addr < 0xFE00: // Shadow RAM
@@ -76,7 +72,7 @@ func (b *Bus) WriteAddress(addr uint16, val uint8) {
 	case addr < 0xFEA0: // Sprite Attribute Memory
 		// FORWARD TO GPU
 		// Sprite Attribute Memory
-		b.gpu.WriteAddress(addr, val)
+		b.Gpu.WriteAddress(addr, val)
 	case addr < 0xFF00: // Unused
 		// LOG THIS.  Probably an error.
 	case addr < 0xFF4C: // IO Registers
@@ -86,6 +82,6 @@ func (b *Bus) WriteAddress(addr uint16, val uint8) {
 	case addr < 0xFFFF: // High RAM
 		b.highRAM[0xFFFE-addr] = byte(val)
 	case addr == 0xFFFF: // Interrupt Control Register
-		b.interrupts = byte(val)
+		b.Processor.SetInterrupts(byte(val))
 	}
 }

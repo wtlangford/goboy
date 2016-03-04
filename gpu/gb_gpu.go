@@ -2,6 +2,7 @@
 package gpu
 
 import "fmt"
+import "github.com/wtlangford/goboy/bus"
 
 type GBGpu struct {
 	vram [8 * 1024]byte // 8 KByte
@@ -16,6 +17,10 @@ type GBGpu struct {
 
 	LCDC byte
 	Stat byte
+
+	scanline int
+
+	bus bus.Bus
 }
 
 type Screen struct {
@@ -25,7 +30,7 @@ type Window struct {
 	WindowY, WindowX uint8
 }
 
-func (g *GBGpu) ReadAddress(addr uint16) uint8 {
+func (g *GBGpu) ReadAddress(addr uint16) byte {
 	switch {
 	case addr >= 0x8000 && addr < 0xA000:
 		return g.vram[addr-0x8000]
@@ -83,4 +88,12 @@ func (g *GBGpu) DMALoad(data []byte) {
 
 func (g *GBGpu) Step() {
 
+	// Check new MClock from processor to see how long we've run for.
+	// Manage GPU state
+	// Draw appropriate lines
+
+}
+
+func (g *GBGpu) MClocksToVBlank() uint {
+	return 17556
 }

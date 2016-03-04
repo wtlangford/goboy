@@ -6,4 +6,6 @@ type GPU interface {
 	WriteAddress(addr uint16, val byte)
 	DMALoad(data []byte)
 	Step()
+
+	MClocksToVBlank() uint
 }
