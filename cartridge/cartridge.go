@@ -7,6 +7,7 @@ type Cartridge interface {
 }
 
 func NewCartridge(cartridgeROM []byte) Cartridge {
+	// TODO: Check length of ROM data
 	// Inspect ROM to identify Cartridge Type
 	// Instantiate that type
 	switch cartridgeROM[0x147] {

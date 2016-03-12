@@ -76,7 +76,13 @@ type GBProcessor struct {
 
 	interrupts byte
 
-	bus bus.GBBus
+	bus bus.Bus
+}
+
+func NewGBProcessor(bus bus.Bus) *GBProcessor {
+	proc := &GBProcessor{bus: bus}
+	proc.initOpcodes()
+	return proc
 }
 
 func (p *GBProcessor) Step() {
@@ -114,7 +120,7 @@ func (p *GBProcessor) Step() {
 }
 
 func (p *GBProcessor) RunUntilVBlank() {
-	endClock := p.state.MClock + p.bus.Gpu.MClocksToVBlank()
+	endClock := p.state.MClock + p.bus.Gpu().MClocksToVBlank()
 	for p.state.MClock < endClock {
 		p.Step()
 	}

@@ -18,13 +18,13 @@ func NewRomOnlyCartridge(cartridgeROM []byte) *RomOnlyCartridge {
 	return &c
 }
 
-func (c *RomOnlyCartridge) ReadAddress(addr uint8) uint8 {
+func (c *RomOnlyCartridge) ReadAddress(addr uint16) uint8 {
 	if int(addr) > len(c.rom) {
 		panic(fmt.Sprintf("Invalid read at address %d on ROM Only Cartridge", addr))
 	}
 	return c.rom[addr]
 }
 
-func (c *RomOnlyCartridge) WriteAddress(addr uint8, val uint8) {
+func (c *RomOnlyCartridge) WriteAddress(addr uint16, val uint8) {
 	panic(fmt.Sprintf("Invalid write to address %d on ROM Only Cartridge", addr))
 }

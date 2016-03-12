@@ -1,5 +1,5 @@
 // vim: noet:ts=3:sw=3:sts=3
-package gpu
+package gb
 
 import "fmt"
 import "github.com/wtlangford/goboy/bus"
@@ -28,6 +28,10 @@ type Screen struct {
 }
 type Window struct {
 	WindowY, WindowX uint8
+}
+
+func NewGBGpu(bus bus.Bus) *GBGpu {
+	return &GBGpu{bus: bus}
 }
 
 func (g *GBGpu) ReadAddress(addr uint16) byte {
