@@ -7,11 +7,17 @@ type Cartridge interface {
 }
 
 func NewCartridge(cartridgeROM []byte) Cartridge {
-	// TODO: Check length of ROM data
-	// Inspect ROM to identify Cartridge Type
-	// Instantiate that type
+	// Cartridge ROM header length is 0x14F
+	if len(cartridgeROM) < 0x14F {
+		panic("Cartridge ROM is too short. Cannot contain full header.")
+	}
 	switch cartridgeROM[0x147] {
+	case 0x0:
+		return NewRomOnlyCartridge(cartridgeROM)
+	case 0x1, 0x2:
+		return NewMbc1Cartridge(cartridgeROM)
+	// refer to page 11 of manual for other cartridge types
 	default:
-		return nil
+		panic("Invalid cartridge type.")
 	}
 }
