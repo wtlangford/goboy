@@ -85,7 +85,7 @@ func NewGBProcessor(bus bus.Bus) *GBProcessor {
 	return proc
 }
 
-func (p *GBProcessor) Step() {
+func (p *GBProcessor) Step() uint {
 	var opcode Opcode
 	op := p.readAddress(p.regs.PC)
 	oplen := 1
@@ -109,20 +109,24 @@ func (p *GBProcessor) Step() {
 	opcode.Func(p, opcode.Opcode, params...)
 
 	if p.state.SlowStep {
+		p.state.SlowStep = false
 		p.state.MClock += uint(opcode.LongCycles)
 		p.state.TClock += 4 * uint(opcode.LongCycles)
+		return uint(opcode.LongCycles)
 	} else {
 		p.state.MClock += uint(opcode.ShortCycles)
 		p.state.TClock += 4 * uint(opcode.ShortCycles)
+		return uint(opcode.ShortCycles)
 	}
-	p.state.SlowStep = false
 
 }
 
 func (p *GBProcessor) RunUntilVBlank() {
 	endClock := p.state.MClock + p.bus.Gpu().MClocksToVBlank()
-	for p.state.MClock < endClock {
-		p.Step()
+	// TODO: Handle overflow
+	for uint64(p.state.MClock) < uint64(endClock) {
+		stepSize := p.Step()
+		p.bus.Gpu().Step(stepSize)
 	}
 }
 
