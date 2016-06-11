@@ -18,10 +18,21 @@ type GBGpu struct {
 	LCDC byte
 	Stat byte
 
-	scanline int
+	scanline  uint
+	mode      gpuMode
+	modeClock uint
 
 	bus bus.Bus
 }
+
+type gpuMode uint
+
+const (
+	gpuModeHorizontalBlank gpuMode = iota
+	gpuModeVerticalBlank
+	gpuModeScanlineOAM
+	gpuModeScanlineVRAM
+)
 
 type Screen struct {
 	ScrollY, ScrollX uint8
@@ -90,12 +101,47 @@ func (g *GBGpu) DMALoad(data []byte) {
 
 }
 
-func (g *GBGpu) Step() {
+func (g *GBGpu) renderScan() {}
 
-	// Check new MClock from processor to see how long we've run for.
-	// Manage GPU state
-	// Draw appropriate lines
+func (g *GBGpu) Step(stepLength uint) {
 
+	g.modeClock += stepLength
+
+	switch g.mode {
+	case gpuModeScanlineOAM:
+		if g.modeClock >= 20 {
+			g.modeClock -= 20
+			g.mode = gpuModeScanlineVRAM
+		}
+
+	case gpuModeScanlineVRAM:
+		if g.modeClock >= 43 {
+			g.modeClock -= 43
+			g.mode = gpuModeHorizontalBlank
+			g.renderScan()
+		}
+
+	case gpuModeHorizontalBlank:
+		if g.modeClock >= 51 {
+			g.modeClock -= 51
+			g.mode = gpuModeScanlineOAM
+			g.scanline++
+			if g.scanline == 143 {
+				g.mode = gpuModeVerticalBlank
+				// TODO: render frame?
+			}
+		}
+
+	case gpuModeVerticalBlank:
+		if g.modeClock >= 114 {
+			g.modeClock -= 114
+			g.scanline++
+			if g.scanline == 154 {
+				g.scanline = 0
+				g.mode = gpuModeScanlineOAM
+			}
+		}
+	}
 }
 
 func (g *GBGpu) MClocksToVBlank() uint {
