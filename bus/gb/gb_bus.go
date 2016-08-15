@@ -42,8 +42,12 @@ func (b *GBBus) ReadAddress(addr uint16) uint8 {
 		return b.gpu.ReadAddress(addr)
 	case addr < 0xFF00: // Unused
 		// LOG THIS.  Probably an error.
-	case addr < 0xFF4C: // IO Registers
-		// FORWARD TO IO
+	case addr < 0xFF10:
+		// Timer, joypad, serial data, interrupt flag IO Registers
+	case addr < 0xFF40:
+		// Sound IO Registers
+	case addr < 0xFF4C: // GPU Registers
+		return b.gpu.ReadAddress(addr)
 	case addr < 0xFF80: // Unused
 		// LOG THIS.  Probably an error.
 	case addr < 0xFFFF: // High RAM
@@ -70,8 +74,12 @@ func (b *GBBus) WriteAddress(addr uint16, val uint8) {
 		b.gpu.WriteAddress(addr, val)
 	case addr < 0xFF00: // Unused
 		// LOG THIS.  Probably an error.
-	case addr < 0xFF4C: // IO Registers
-		// FORWARD TO IO
+	case addr < 0xFF10:
+		// Timer, joypad, serial data, interrupt flag IO Registers
+	case addr < 0xFF40:
+		// Sound IO Registers
+	case addr < 0xFF4C: // GPU Registers
+		b.gpu.WriteAddress(addr, val)
 	case addr < 0xFF80: // Unused
 		// LOG THIS.  Probably an error.
 	case addr < 0xFFFF: // High RAM
