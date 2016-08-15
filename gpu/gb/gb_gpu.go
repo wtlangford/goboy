@@ -18,9 +18,12 @@ type GBGpu struct {
 	LCDC byte
 	Stat byte
 
-	scanline  uint
-	mode      gpuMode
-	modeClock uint
+	scanline        byte
+	scanlineCompare byte
+	mode            gpuMode
+	modeClock       uint
+
+	registerMap map[uint16]*byte
 
 	bus bus.Bus
 }
@@ -34,15 +37,53 @@ const (
 	gpuModeScanlineVRAM
 )
 
+const (
+	lcdcBackgroundEnabled byte = 1 << iota
+	lcdcColor0Tranparency
+	lcdcSpriteSize
+	lcdcBackgroundTileTableAddress
+	lcdcTilePatternTableAddress
+	lcdcWindowEndabled
+	lcdcWindowTileTableAddress
+	lcdcLCDEnabled
+)
+
+const (
+	_ byte = 1 << iota
+	_
+	scanlineCoincidenceFlag
+	interruptOnControllerMode00
+	interruptOnControllerMode01
+	interruptOnControllerMode10
+	interruptOnCoincidence
+)
+
 type Screen struct {
-	ScrollY, ScrollX uint8
+	ScrollY, ScrollX byte
 }
 type Window struct {
-	WindowY, WindowX uint8
+	WindowY, WindowX byte
 }
 
 func NewGBGpu(bus bus.Bus) *GBGpu {
-	return &GBGpu{bus: bus}
+	gpu := GBGpu{bus: bus}
+
+	gpu.registerMap = map[uint16]*byte{
+		0xFF40: &gpu.LCDC,
+		0xFF41: &gpu.Stat,
+		0xFF42: &gpu.ScrollY,
+		0xFF43: &gpu.ScrollX,
+		0xFF44: &gpu.scanline,
+		0xFF45: &gpu.scanlineCompare,
+		//FF46: DMA is write only
+		0xFF47: &gpu.BackgroundPalette,
+		0xFF48: &gpu.ObjectPalette0,
+		0xFF49: &gpu.ObjectPalette1,
+		0xFF4A: &gpu.WindowY,
+		0xFF4B: &gpu.WindowX,
+	}
+
+	return &gpu
 }
 
 func (g *GBGpu) ReadAddress(addr uint16) byte {
@@ -51,6 +92,13 @@ func (g *GBGpu) ReadAddress(addr uint16) byte {
 		return g.vram[addr-0x8000]
 	case addr > 0xFE00 && addr < 0xFEA0:
 		return g.oam[addr-0xFE00]
+	case addr >= 0xFF40:
+		reg := g.registerMap[addr]
+		if reg != nil {
+			return *reg
+		} else {
+			panic(fmt.Sprintf("Invalid read of address %d from GPU", addr))
+		}
 	}
 	panic(fmt.Sprintf("Invalid read of address %d from GPU", addr))
 }
@@ -61,6 +109,20 @@ func (g *GBGpu) WriteAddress(addr uint16, val byte) {
 		g.vram[addr-0x800] = val
 	case addr > 0xFE00 && addr < 0xFEA0:
 		g.oam[addr-0xFE00] = val
+	case addr >= 0xFF40:
+		if addr == 0xFF41 {
+			val = (val &^ 0x3) | (g.Stat & 0x3)
+		} else if addr == 0xFF44 {
+			val = 0
+		} else if addr == 0xFF46 {
+			// uint16(val) << 8
+			// DMA stuff
+			return
+		}
+		reg := g.registerMap[addr]
+		if reg != nil {
+			*reg = val
+		}
 	default:
 		panic(fmt.Sprintf("Invalid read of address %d from GPU", addr))
 	}
@@ -101,7 +163,29 @@ func (g *GBGpu) DMALoad(data []byte) {
 
 }
 
-func (g *GBGpu) renderScan() {}
+func (g *GBGpu) renderScan() {
+	/*
+	 *	Relevant addresses:
+	 *		tile map 0 => 0x9800 - 0x9BFF
+	 *		tile map 1 => 0x9C00 - 0x9FFF
+	 *		tile set 0 => 0x8000 - 0x8FFF
+	 *		tile set 1 => 0x8800 - 0x97FF
+	 *		background palette => 0xFF47
+	 */
+	if g.LCDC&lcdcLCDEnabled > 0 {
+
+		if g.LCDC&lcdcBackgroundEnabled > 0 {
+			renderWindow := g.LCDC&lcdcWindowEndabled > 0
+			g.renderBackground(renderWindow)
+		}
+
+		g.renderSprites()
+	}
+}
+
+func (g *GBGpu) renderBackground(renderWindow bool) {}
+
+func (g *GBGpu) renderSprites() {}
 
 func (g *GBGpu) Step(stepLength uint) {
 
