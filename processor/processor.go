@@ -2,7 +2,7 @@
 package processor
 
 type Processor interface {
-	Step()
+	Step() uint
 
 	GetInterrupts() byte
 	SetInterrupts(val byte)
