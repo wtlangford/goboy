@@ -43,7 +43,7 @@ const (
 	lcdcSpriteSize
 	lcdcBackgroundTileTableAddress
 	lcdcTilePatternTableAddress
-	lcdcWindowEndabled
+	lcdcWindowEnabled
 	lcdcWindowTileTableAddress
 	lcdcLCDEnabled
 )
@@ -175,7 +175,7 @@ func (g *GBGpu) renderScan() {
 	if g.LCDC&lcdcLCDEnabled > 0 {
 
 		if g.LCDC&lcdcBackgroundEnabled > 0 {
-			renderWindow := g.LCDC&lcdcWindowEndabled > 0
+			renderWindow := g.LCDC&lcdcWindowEnabled > 0
 			g.renderBackground(renderWindow)
 		}
 
