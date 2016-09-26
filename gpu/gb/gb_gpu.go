@@ -103,6 +103,14 @@ func (g *GBGpu) ReadAddress(addr uint16) byte {
 	panic(fmt.Sprintf("Invalid read of address %d from GPU", addr))
 }
 
+func (g *GBGpu) readVRAM(addr uint16, length uint16) []byte {
+	if addr < 0x8000 || (addr+length) > 0xA000 {
+		panic(fmt.Sprintf("Invalid read of length %d at address %d from GPU", length, addr))
+	}
+	addr -= 0x8000
+	return g.vram[addr : addr+length]
+}
+
 func (g *GBGpu) WriteAddress(addr uint16, val byte) {
 	switch {
 	case addr >= 0x8000 && addr < 0xA000:
@@ -183,7 +191,64 @@ func (g *GBGpu) renderScan() {
 	}
 }
 
-func (g *GBGpu) renderBackground(renderWindow bool) {}
+// Draws one line of the Backgound to the frame buffer
+// Optionally draws one line of the window.
+func (g *GBGpu) renderBackground(renderWindow bool) {
+	// Figure out where in background to draw
+	// Get pixel data
+	// Map to proper color
+	// Draw to position on buffer
+	// Optionally repeat for window
+	xPos := int(g.ScrollX)
+	yPos := int(g.scanline + g.ScrollY)
+
+	var tileMapAddress uint16
+	if g.LCDC&lcdcBackgroundTileTableAddress == 0 {
+		tileMapAddress = 0x9800
+	} else {
+		tileMapAddress = 0x9C00
+	}
+
+	var tileDataAddress int
+	if g.LCDC&lcdcTilePatternTableAddress == 0 {
+		tileDataAddress = 0x8000
+	} else {
+		tileDataAddress = 0x8800
+	}
+
+	// Tiles are 8 lines high, but we have to skip whole tiles.
+	// integer division yields number of whole tiles to skip (vertically)
+	// 32 tiles per row
+	tileMapAddress += uint16(yPos) / 8 * 32
+
+	y := yPos % 8
+	for tileIndex := 0; tileIndex < 32; tileIndex++ {
+		x := xPos % 8
+		tile := g.ReadAddress(tileMapAddress + uint16(xPos)/8)
+		tileData := g.readVRAM(uint16(tileDataAddress+int(int8(tile))), 16)
+		tileColor := g.readPixel(tileData, x, y)
+		// TODO:
+		// Grab tile shade from tilePatternPalette
+		// Put shade into frame buffer
+		// Finish writing loop to actually be right.
+		// (Increment x properly, handle wrapping of background.)
+		// Also handle wrapping vertically (should be done outside of loop.  If y > 255 ...)
+
+	}
+
+}
+
+// Read one pixel value from the tile data
+// (0, 0) is the top-left pixel
+// Tile data maps like this:
+// 11110000 11001100 -> 3 3 2 2 1 1 0 0
+func (g *GBGpu) readPixel(tileData []byte, x, y int) byte {
+	if x < 0 || x > 7 || y < 0 || y > 7 {
+		panic(fmt.Sprintf("Invalid pixel address in tile: (%i, %i)", x, y))
+	}
+	tileData = tileData[y*2 : (y*2)+2]
+	return ((tileData[1] >> uint(6-x)) & 2) | ((tileData[0] >> uint(7-x)) & 1)
+}
 
 func (g *GBGpu) renderSprites() {}
 
