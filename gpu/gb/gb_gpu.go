@@ -8,6 +8,7 @@ type GBGpu struct {
 	vram [8 * 1024]byte // 8 KByte
 	oam  [160]byte
 
+	FrameBuffer       [160 * 144]byte
 	BackgroundPalette byte
 	ObjectPalette0    byte
 	ObjectPalette1    byte
@@ -27,6 +28,8 @@ type GBGpu struct {
 
 	bus bus.Bus
 }
+
+const rowLength uint = 160
 
 type gpuMode uint
 
@@ -184,7 +187,7 @@ func (g *GBGpu) renderScan() {
 
 		if g.LCDC&lcdcBackgroundEnabled > 0 {
 			renderWindow := g.LCDC&lcdcWindowEnabled > 0
-			g.renderBackground(renderWindow)
+			g.renderBackgroundLine(renderWindow)
 		}
 
 		g.renderSprites()
@@ -193,14 +196,14 @@ func (g *GBGpu) renderScan() {
 
 // Draws one line of the Backgound to the frame buffer
 // Optionally draws one line of the window.
-func (g *GBGpu) renderBackground(renderWindow bool) {
+func (g *GBGpu) renderBackgroundLine(renderWindow bool) {
 	// Figure out where in background to draw
 	// Get pixel data
 	// Map to proper color
 	// Draw to position on buffer
 	// Optionally repeat for window
-	xPos := int(g.ScrollX)
-	yPos := int(g.scanline + g.ScrollY)
+	backgroundX := uint(g.ScrollX)
+	backgroundY := uint(g.scanline + g.ScrollY)
 
 	var tileMapAddress uint16
 	if g.LCDC&lcdcBackgroundTileTableAddress == 0 {
@@ -210,31 +213,46 @@ func (g *GBGpu) renderBackground(renderWindow bool) {
 	}
 
 	var tileDataAddress int
+	var signedOffset bool
 	if g.LCDC&lcdcTilePatternTableAddress == 0 {
 		tileDataAddress = 0x8000
 	} else {
 		tileDataAddress = 0x8800
+		signedOffset = true
 	}
 
 	// Tiles are 8 lines high, but we have to skip whole tiles.
 	// integer division yields number of whole tiles to skip (vertically)
 	// 32 tiles per row
-	tileMapAddress += uint16(yPos) / 8 * 32
+	tileMapAddress += uint16(backgroundY) / 8 * 32
 
-	y := yPos % 8
-	for tileIndex := 0; tileIndex < 32; tileIndex++ {
-		x := xPos % 8
-		tile := g.ReadAddress(tileMapAddress + uint16(xPos)/8)
-		tileData := g.readVRAM(uint16(tileDataAddress+int(int8(tile))), 16)
-		tileColor := g.readPixel(tileData, x, y)
-		// TODO:
-		// Grab tile shade from tilePatternPalette
-		// Put shade into frame buffer
-		// Finish writing loop to actually be right.
-		// (Increment x properly, handle wrapping of background.)
-		// Also handle wrapping vertically (should be done outside of loop.  If y > 255 ...)
+	yPixel := backgroundY % 8
 
+	var pixelData []byte
+	var screenXPos uint
+	for screenXPos = 0; screenXPos < 160; screenXPos++ {
+		xPixel := backgroundX % 8
+		if xPixel == 0 || pixelData == nil {
+			// We need to load a new tile
+			tile := g.ReadAddress(tileMapAddress + uint16(backgroundX)/8)
+			var tileOffset int
+			if signedOffset {
+				tileOffset = int(int8(tile))
+			} else {
+				tileOffset = int(tile)
+			}
+			rawTile := g.readVRAM(uint16(tileDataAddress+tileOffset), 16)
+			pixelData = g.tileToPixels(rawTile, g.BackgroundPalette, yPixel)
+		}
+
+		g.FrameBuffer[uint(g.scanline)*rowLength+screenXPos] = pixelData[xPixel]
+		if backgroundX >= 255 {
+			backgroundX = 0
+		} else {
+			backgroundX++
+		}
 	}
+	// TODO: Render window
 
 }
 
@@ -248,6 +266,25 @@ func (g *GBGpu) readPixel(tileData []byte, x, y int) byte {
 	}
 	tileData = tileData[y*2 : (y*2)+2]
 	return ((tileData[1] >> uint(6-x)) & 2) | ((tileData[0] >> uint(7-x)) & 1)
+}
+
+func (g *GBGpu) tileToPixels(tileData []byte, colorPalette byte, row uint) []byte {
+	pixelData := make([]byte, 8)
+	tileData = tileData[row*2 : (row*2)+2]
+	for x := 0; x < 8; x++ {
+		color := ((tileData[1] >> uint(6-x)) & 2) | ((tileData[0] >> uint(7-x)) & 1)
+		pixelData[x] = tileShade(colorPalette, color)
+	}
+	return pixelData
+}
+
+// Returns the indexed shade from the palette
+// The palette contains 4 2-bit shades, indexed as
+// 00112233.
+// Shades are, from lightest to darkest, 00, 01, 10, 11
+func tileShade(palette byte, index byte) byte {
+	colorShift := uint(index) * 2
+	return (palette >> colorShift) & 0x3
 }
 
 func (g *GBGpu) renderSprites() {}
