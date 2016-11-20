@@ -3,6 +3,7 @@ package gb
 
 import "fmt"
 import "github.com/wtlangford/goboy/bus"
+import "github.com/wtlangford/goboy/common"
 
 type GBGpu struct {
 	vram [8 * 1024]byte // 8 KByte
@@ -185,97 +186,84 @@ func (g *GBGpu) renderScan() {
 	 */
 	if g.LCDC&lcdcLCDEnabled > 0 {
 
+		var lineData []byte
 		if g.LCDC&lcdcBackgroundEnabled > 0 {
-			renderWindow := g.LCDC&lcdcWindowEnabled > 0
-			g.renderBackgroundLine(renderWindow)
+			lineData = g.renderLine(0, g.ScrollX, g.scanline+g.ScrollY, false)
+
+			if g.LCDC&lcdcWindowEnabled > 0 && g.WindowY <= g.scanline {
+				windowData := g.renderLine(g.WindowX-7, 0, g.scanline-g.WindowY, true)
+				lineData = append(lineData[:g.WindowX-7], windowData[g.WindowX-7:]...)
+			}
 		}
 
-		g.renderSprites()
+		g.renderSprites() // Pass lineData here so that sprites can use their priority bit
 	}
 }
 
-// Draws one line of the Backgound to the frame buffer
-// Optionally draws one line of the window.
-func (g *GBGpu) renderBackgroundLine(renderWindow bool) {
-	// Figure out where in background to draw
-	// Get pixel data
-	// Map to proper color
-	// Draw to position on buffer
-	// Optionally repeat for window
-	backgroundX := uint(g.ScrollX)
-	backgroundY := uint(g.scanline + g.ScrollY)
-
+func (g *GBGpu) renderLine(screenXPos, xOffset, yOffset byte, isWindow bool) []byte {
 	var tileMapAddress uint16
-	if g.LCDC&lcdcBackgroundTileTableAddress == 0 {
+	var tileDataAddress int
+	var mapAddressBit byte
+	var signedOffset bool
+
+	if isWindow {
+		mapAddressBit = lcdcWindowTileTableAddress
+	} else {
+		mapAddressBit = lcdcBackgroundTileTableAddress
+	}
+
+	if g.LCDC&mapAddressBit == 0 {
 		tileMapAddress = 0x9800
 	} else {
 		tileMapAddress = 0x9C00
 	}
 
-	var tileDataAddress int
-	var signedOffset bool
 	if g.LCDC&lcdcTilePatternTableAddress == 0 {
 		tileDataAddress = 0x8000
 	} else {
 		tileDataAddress = 0x8800
 		signedOffset = true
 	}
-
 	// Tiles are 8 lines high, but we have to skip whole tiles.
 	// integer division yields number of whole tiles to skip (vertically)
 	// 32 tiles per row
-	tileMapAddress += uint16(backgroundY) / 8 * 32
+	tileMapAddress += uint16(yOffset) / 8 * 32
 
-	yPixel := backgroundY % 8
-
-	var pixelData []byte
-	var screenXPos uint
-	for screenXPos = 0; screenXPos < 160; screenXPos++ {
-		xPixel := backgroundX % 8
-		if xPixel == 0 || pixelData == nil {
+	yPixel := yOffset % 8
+	var colorData []byte
+	outColors := make([]byte, rowLength)
+	for ; screenXPos < byte(rowLength); screenXPos++ {
+		xPixel := xOffset % 8
+		if xPixel == 0 || colorData == nil {
 			// We need to load a new tile
-			tile := g.ReadAddress(tileMapAddress + uint16(backgroundX)/8)
+			tile := g.ReadAddress(tileMapAddress + uint16(xOffset)/8)
 			var tileOffset int
 			if signedOffset {
-				tileOffset = int(int8(tile))
+				tileOffset = common.ByteToInt(tile)
 			} else {
 				tileOffset = int(tile)
 			}
 			rawTile := g.readVRAM(uint16(tileDataAddress+tileOffset), 16)
-			pixelData = g.tileToPixels(rawTile, g.BackgroundPalette, yPixel)
-		}
+			colorData = g.tileToColors(rawTile, uint(yPixel))
 
-		g.FrameBuffer[uint(g.scanline)*rowLength+screenXPos] = pixelData[xPixel]
-		if backgroundX >= 255 {
-			backgroundX = 0
-		} else {
-			backgroundX++
 		}
+		g.FrameBuffer[uint(g.scanline)*rowLength+uint(screenXPos)] = tileShade(g.BackgroundPalette, colorData[xPixel])
+		outColors[screenXPos] = colorData[xPixel]
+		xOffset++
 	}
-	// TODO: Render window
-
+	return outColors
 }
 
-// Read one pixel value from the tile data
-// (0, 0) is the top-left pixel
+// Extract a row of palette colors from the tile data
 // Tile data maps like this:
 // 11110000 11001100 -> 3 3 2 2 1 1 0 0
-func (g *GBGpu) readPixel(tileData []byte, x, y int) byte {
-	if x < 0 || x > 7 || y < 0 || y > 7 {
-		panic(fmt.Sprintf("Invalid pixel address in tile: (%i, %i)", x, y))
-	}
-	tileData = tileData[y*2 : (y*2)+2]
-	return ((tileData[1] >> uint(6-x)) & 2) | ((tileData[0] >> uint(7-x)) & 1)
-}
-
-func (g *GBGpu) tileToPixels(tileData []byte, colorPalette byte, row uint) []byte {
-	pixelData := make([]byte, 8)
+func (g *GBGpu) tileToColors(tileData []byte, row uint) []byte {
+	colorData := make([]byte, 8)
 	tileData = tileData[row*2 : (row*2)+2]
 	for x := 0; x < 8; x++ {
-		color := ((tileData[1] >> uint(6-x)) & 2) | ((tileData[0] >> uint(7-x)) & 1)
-		pixelData[x] = tileShade(colorPalette, color)
+		colorData[x] = ((tileData[1] >> uint(6-x)) & 2) | ((tileData[0] >> uint(7-x)) & 1)
 	}
-	return pixelData
+	return colorData
 }
 
 // Returns the indexed shade from the palette
