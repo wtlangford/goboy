@@ -8,3 +8,15 @@ func ByteToInt(v byte) int {
 func ByteToUint(v byte) uint {
 	return uint(v)
 }
+
+func HasFlagSet(v byte, f byte) bool {
+	return v&f == f
+}
+
+func HasFlagsSet(v byte, flags ...byte) bool {
+	var f byte
+	for _, flg := range flags {
+		f |= flg
+	}
+	return v&f == f
+}

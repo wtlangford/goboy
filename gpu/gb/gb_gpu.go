@@ -4,6 +4,7 @@ package gb
 import "fmt"
 import "github.com/wtlangford/goboy/bus"
 import "github.com/wtlangford/goboy/common"
+import "sort"
 
 type GBGpu struct {
 	vram [8 * 1024]byte // 8 KByte
@@ -43,7 +44,7 @@ const (
 
 const (
 	lcdcBackgroundEnabled byte = 1 << iota
-	lcdcColor0Tranparency
+	lcdcSpritesEnabled
 	lcdcSpriteSize
 	lcdcBackgroundTileTableAddress
 	lcdcTilePatternTableAddress
@@ -53,9 +54,7 @@ const (
 )
 
 const (
-	_ byte = 1 << iota
-	_
-	scanlineCoincidenceFlag
+	scanlineCoincidenceFlag byte = 4 << iota
 	interruptOnControllerMode00
 	interruptOnControllerMode01
 	interruptOnControllerMode10
@@ -67,6 +66,46 @@ type Screen struct {
 }
 type Window struct {
 	WindowY, WindowX byte
+}
+
+const (
+	spriteAttributePalette byte = 8 << iota
+	spriteAttributeXFlip
+	spriteAttributeYFlip
+	spriteAttributePriority
+)
+
+type sprite struct {
+	x, y     byte
+	pattern  byte
+	xFlip    bool
+	yFlip    bool
+	priority bool
+	palette  byte
+
+	oamIndex byte
+}
+
+type spriteList []sprite
+
+func (sl spriteList) Len() int {
+	return len(sl)
+}
+
+func (sl spriteList) Less(i, j int) bool {
+	l := sl[i]
+	r := sl[j]
+	if l.x == r.x {
+		return l.oamIndex < r.oamIndex
+	}
+	return l.x < r.x
+}
+
+// Swap swaps the elements with indexes i and j.
+func (sl spriteList) Swap(i, j int) {
+	t := sl[i]
+	sl[i] = sl[j]
+	sl[j] = t
 }
 
 func NewGBGpu(bus bus.Bus) *GBGpu {
@@ -184,19 +223,21 @@ func (g *GBGpu) renderScan() {
 	 *		tile set 1 => 0x8800 - 0x97FF
 	 *		background palette => 0xFF47
 	 */
-	if g.LCDC&lcdcLCDEnabled > 0 {
+	if common.HasFlagSet(g.LCDC, lcdcLCDEnabled) {
 
 		var lineData []byte
-		if g.LCDC&lcdcBackgroundEnabled > 0 {
+		if common.HasFlagSet(g.LCDC, lcdcBackgroundEnabled) {
 			lineData = g.renderLine(0, g.ScrollX, g.scanline+g.ScrollY, false)
 
-			if g.LCDC&lcdcWindowEnabled > 0 && g.WindowY <= g.scanline {
+			if common.HasFlagSet(g.LCDC, lcdcWindowEnabled) && g.WindowY <= g.scanline {
 				windowData := g.renderLine(g.WindowX-7, 0, g.scanline-g.WindowY, true)
 				lineData = append(lineData[:g.WindowX-7], windowData[g.WindowX-7:]...)
 			}
 		}
 
-		g.renderSprites() // Pass lineData here so that sprites can use their priority bit
+		if common.HasFlagSet(g.LCDC, lcdcSpritesEnabled) {
+			g.renderSprites(lineData) // Pass lineData here so that sprites can use their priority bit
+		}
 	}
 }
 
@@ -212,17 +253,17 @@ func (g *GBGpu) renderLine(screenXPos, xOffset, yOffset byte, isWindow bool) []b
 		mapAddressBit = lcdcBackgroundTileTableAddress
 	}
 
-	if g.LCDC&mapAddressBit == 0 {
-		tileMapAddress = 0x9800
-	} else {
+	if common.HasFlagSet(g.LCDC, mapAddressBit) {
 		tileMapAddress = 0x9C00
+	} else {
+		tileMapAddress = 0x9800
 	}
 
-	if g.LCDC&lcdcTilePatternTableAddress == 0 {
-		tileDataAddress = 0x8000
-	} else {
+	if common.HasFlagSet(g.LCDC, lcdcTilePatternTableAddress) {
 		tileDataAddress = 0x8800
 		signedOffset = true
+	} else {
+		tileDataAddress = 0x8000
 	}
 	// Tiles are 8 lines high, but we have to skip whole tiles.
 	// integer division yields number of whole tiles to skip (vertically)
@@ -243,7 +284,7 @@ func (g *GBGpu) renderLine(screenXPos, xOffset, yOffset byte, isWindow bool) []b
 			} else {
 				tileOffset = int(tile)
 			}
-			rawTile := g.readVRAM(uint16(tileDataAddress+tileOffset), 16)
+			rawTile := g.readVRAM(uint16(tileDataAddress+tileOffset*16), 16)
 			colorData = g.tileToColors(rawTile, uint(yPixel))
 
 		}
@@ -275,7 +316,95 @@ func tileShade(palette byte, index byte) byte {
 	return (palette >> colorShift) & 0x3
 }
 
-func (g *GBGpu) renderSprites() {}
+func (g *GBGpu) renderSprites(backgroundLineColors []byte) {
+	sprites := g.getDrawableSprites()
+
+	for _, sprite := range sprites {
+		screenX := sprite.x - 8
+		screenY := sprite.y - 16
+		yPixel := g.scanline - screenY
+
+		if sprite.yFlip {
+			yPixel = g.spriteHeight() - yPixel
+		}
+		spritePattern := g.spritePattern(sprite, yPixel)
+		for xPixel := 0; xPixel < 8; xPixel++ {
+			var color byte
+			if sprite.xFlip {
+				color = spritePattern[8-xPixel]
+			} else {
+				color = spritePattern[xPixel]
+			}
+			shade := tileShade(sprite.palette, color)
+			if shade == 0 {
+				// 0 is transparent
+				continue
+			}
+
+			if sprite.priority && int(screenX) < len(backgroundLineColors) && backgroundLineColors[screenX] != 0 {
+				continue
+			}
+			g.FrameBuffer[uint(g.scanline)*rowLength+uint(screenX)] = shade
+			screenX++
+		}
+	}
+}
+
+// Returns a list of sprites to draw for the current line in ascending priority order.
+// There are at most 10 sprites in the list
+func (g *GBGpu) getDrawableSprites() spriteList {
+	var sprites spriteList
+	oamData := g.oam[:]
+	oamLen := len(oamData)
+
+	tallSprites := common.HasFlagSet(g.LCDC, lcdcSpriteSize)
+	for i := 0; i < oamLen; i += 4 {
+		var s sprite
+		s.y = oamData[i]
+
+		if s.y-16 <= g.scanline && s.y-16+g.spriteHeight() >= g.scanline {
+			s.x = oamData[i+1]
+			// 8x16 sprites ignore the LSB of their pattern index
+			if tallSprites {
+				s.pattern = oamData[i+2] &^ 1
+			} else {
+				s.pattern = oamData[i+2]
+			}
+			flags := oamData[i+3]
+			s.xFlip = common.HasFlagSet(flags, spriteAttributeXFlip)
+			s.yFlip = common.HasFlagSet(flags, spriteAttributeYFlip)
+			s.priority = common.HasFlagSet(flags, spriteAttributePriority)
+			if common.HasFlagSet(flags, spriteAttributePalette) {
+				s.palette = g.ObjectPalette1
+			} else {
+				s.palette = g.ObjectPalette0
+			}
+			sprites = append(sprites, s)
+		}
+	}
+	sort.Sort(sprites)
+	if len(sprites) > 10 {
+		sprites = sprites[:10]
+	}
+	for i, j := 0, len(sprites)-1; i < j; i, j = i+1, j-1 {
+		sprites[i], sprites[j] = sprites[j], sprites[i]
+	}
+	return sprites
+}
+
+func (g *GBGpu) spriteHeight() byte {
+	if common.HasFlagSet(g.LCDC, lcdcSpriteSize) {
+		return 16
+	}
+	return 8
+}
+
+func (g *GBGpu) spritePattern(s sprite, line byte) []byte {
+	const spriteDataTable uint16 = 0x8000
+	spriteData := g.readVRAM(spriteDataTable+uint16(s.pattern)*16+uint16(line)*2, 2)
+	spriteData = g.tileToColors(spriteData, 0)
+	return spriteData
+}
 
 func (g *GBGpu) Step(stepLength uint) {
 
