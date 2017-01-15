@@ -2,8 +2,7 @@
 package cartridge
 
 import (
-	"fmt"
-	"os"
+	"log"
 )
 
 const (
@@ -31,7 +30,7 @@ func NewMbc1Cartridge(cartridgeROM []byte) *Mbc1Cartridge {
 	c := Mbc1Cartridge{}
 	c.remapBanks()
 	if len(cartridgeROM) > maxRomSize {
-		panic(fmt.Sprintf("Trying to load too big ROM of size %d into MBC1 cartridge.", len(cartridgeROM)))
+		log.Panicf("Trying to load too big ROM of size %d into MBC1 cartridge.\n", len(cartridgeROM))
 	}
 	copy(c.rom[:], cartridgeROM)
 	return &c
@@ -47,11 +46,12 @@ func (c *Mbc1Cartridge) ReadAddress(addr uint16) uint8 {
 		if c.ramEnabled {
 			return c.ramBank[addr-0xA000]
 		} else {
-			fmt.Fprintf(os.Stderr, "Reading from RAM address %d on MBC1 cartridge while RAM is disabled.", addr)
+			log.Printf("Reading from RAM address %d on MBC1 cartridge while RAM is disabled.\n", addr)
 			return 0xff
 		}
 	}
-	panic(fmt.Sprintf("Invalid read of address %d on MBC1 cartridge.", addr))
+	log.Panicf("Invalid read of address %d on MBC1 cartridge.\n", addr)
+	panic("unreachable")
 }
 
 func (c *Mbc1Cartridge) WriteAddress(addr uint16, val uint8) {
@@ -62,7 +62,7 @@ func (c *Mbc1Cartridge) WriteAddress(addr uint16, val uint8) {
 		if c.ramEnabled {
 			c.ramBank[addr-0xA000] = byte(val)
 		} else {
-			fmt.Fprintf(os.Stderr, "Writing to RAM address %d on MBC1 cartridge while RAM is disabled.", addr)
+			log.Printf("Writing to RAM address %d on MBC1 cartridge while RAM is disabled.\n", addr)
 		}
 	}
 }

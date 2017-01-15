@@ -11,7 +11,7 @@ const (
 	GBFlagMask      uint8 = 0xF0
 )
 
-type GBRegisters struct {
+type Registers struct {
 	A, F uint8
 	B, C uint8
 	D, E uint8
@@ -20,7 +20,7 @@ type GBRegisters struct {
 	PC   uint16
 }
 
-type GBState struct {
+type State struct {
 	SlowStep   bool
 	IME        bool
 	MClock     uint
@@ -28,64 +28,64 @@ type GBState struct {
 	Interrupts byte
 }
 
-func (r *GBRegisters) AF() uint16 {
+func (r *Registers) AF() uint16 {
 	return (uint16(r.A) << 8) | uint16(r.F)
 }
 
-func (r *GBRegisters) SetAF(af uint16) {
+func (r *Registers) SetAF(af uint16) {
 	r.A = uint8(af >> 8)
 	r.F = uint8(af)
 }
 
-func (r *GBRegisters) BC() uint16 {
+func (r *Registers) BC() uint16 {
 	return (uint16(r.B) << 8) | uint16(r.C)
 }
 
-func (r *GBRegisters) SetBC(bc uint16) {
+func (r *Registers) SetBC(bc uint16) {
 	r.B = uint8(bc >> 8)
 	r.C = uint8(bc)
 }
 
-func (r *GBRegisters) DE() uint16 {
+func (r *Registers) DE() uint16 {
 	return (uint16(r.D) << 8) | uint16(r.E)
 }
 
-func (r *GBRegisters) SetDE(de uint16) {
+func (r *Registers) SetDE(de uint16) {
 	r.D = uint8(de >> 8)
 	r.E = uint8(de)
 }
 
-func (r *GBRegisters) HL() uint16 {
+func (r *Registers) HL() uint16 {
 	return (uint16(r.H) << 8) | uint16(r.L)
 }
 
-func (r *GBRegisters) SetHL(hl uint16) {
+func (r *Registers) SetHL(hl uint16) {
 	r.H = uint8(hl >> 8)
 	r.L = uint8(hl)
 }
 
-func (r *GBRegisters) GetFlags() uint8 {
+func (r *Registers) GetFlags() uint8 {
 	return r.F & GBFlagMask
 }
 
-type GBProcessor struct {
+type Processor struct {
 	opcodes   []Opcode
 	cbOpcodes []Opcode
-	regs      GBRegisters
-	state     GBState
+	regs      Registers
+	state     State
 
 	interrupts byte
 
 	bus bus.Bus
 }
 
-func NewGBProcessor(bus bus.Bus) *GBProcessor {
-	proc := &GBProcessor{bus: bus}
+func NewProcessor(bus bus.Bus) *Processor {
+	proc := &Processor{bus: bus}
 	proc.initOpcodes()
 	return proc
 }
 
-func (p *GBProcessor) Step() uint {
+func (p *Processor) Step() uint {
 	var opcode Opcode
 	op := p.readAddress(p.regs.PC)
 	oplen := 1
@@ -121,49 +121,49 @@ func (p *GBProcessor) Step() uint {
 
 }
 
-func (p *GBProcessor) RunUntilVBlank() {
-	endClock := p.state.MClock + p.bus.Gpu().MClocksToVBlank()
-	// TODO: Handle overflow
-	for uint64(p.state.MClock) < uint64(endClock) {
+func (p *Processor) RunUntilVBlank() {
+	totalSteps := p.bus.Gpu().MClocksToVBlank()
+	for stepsTaken := uint(0); stepsTaken < totalSteps; {
 		stepSize := p.Step()
 		p.bus.Gpu().Step(stepSize)
+		stepsTaken += stepSize
 	}
 }
 
-func (p *GBProcessor) readAddress(addr uint16) uint8 {
+func (p *Processor) readAddress(addr uint16) uint8 {
 	return p.bus.ReadAddress(addr)
 }
 
-func (p *GBProcessor) readAddress2(addr uint16) uint16 {
+func (p *Processor) readAddress2(addr uint16) uint16 {
 	// GB is little endian
-	return uint16(p.readAddress(addr)) | uint16(p.readAddress(addr+1)<<8)
+	return uint16(p.readAddress(addr)) | uint16(p.readAddress(addr+1))<<8
 }
 
-func (p *GBProcessor) writeAddress(addr uint16, val uint8) {
+func (p *Processor) writeAddress(addr uint16, val uint8) {
 	p.bus.WriteAddress(addr, val)
 }
 
-func (p *GBProcessor) writeAddress2(addr uint16, val uint16) {
+func (p *Processor) writeAddress2(addr uint16, val uint16) {
 	// GB is little endian.
 	p.writeAddress(addr, uint8(val&0xFF))
 	p.writeAddress(addr+1, uint8(val>>8))
 }
 
-func (p *GBProcessor) pushStack(val uint16) {
+func (p *Processor) pushStack(val uint16) {
 	p.regs.SP -= 2
 	p.writeAddress2(p.regs.SP, val)
 }
 
-func (p *GBProcessor) popStack() uint16 {
+func (p *Processor) popStack() uint16 {
 	val := p.readAddress2(p.regs.SP)
 	p.regs.SP += 2
 	return val
 }
 
-func (p *GBProcessor) GetInterrupts() byte {
+func (p *Processor) GetInterrupts() byte {
 	return p.state.Interrupts
 }
 
-func (p *GBProcessor) SetInterrupts(val byte) {
+func (p *Processor) SetInterrupts(val byte) {
 	p.state.Interrupts = val
 }

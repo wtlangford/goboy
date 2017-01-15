@@ -1,12 +1,15 @@
 // vim: noet:ts=3:sw=3:sts=3
 package gb
 
-import "fmt"
-import "github.com/wtlangford/goboy/bus"
-import "github.com/wtlangford/goboy/common"
-import "sort"
+import (
+	"log"
+	"sort"
 
-type GBGpu struct {
+	"github.com/wtlangford/goboy/bus"
+	"github.com/wtlangford/goboy/common"
+)
+
+type Gpu struct {
 	vram [8 * 1024]byte // 8 KByte
 	oam  [160]byte
 
@@ -108,8 +111,8 @@ func (sl spriteList) Swap(i, j int) {
 	sl[j] = t
 }
 
-func NewGBGpu(bus bus.Bus) *GBGpu {
-	gpu := GBGpu{bus: bus}
+func NewGpu(bus bus.Bus) *Gpu {
+	gpu := Gpu{bus: bus}
 
 	gpu.registerMap = map[uint16]*byte{
 		0xFF40: &gpu.LCDC,
@@ -129,7 +132,7 @@ func NewGBGpu(bus bus.Bus) *GBGpu {
 	return &gpu
 }
 
-func (g *GBGpu) ReadAddress(addr uint16) byte {
+func (g *Gpu) ReadAddress(addr uint16) byte {
 	switch {
 	case addr >= 0x8000 && addr < 0xA000:
 		return g.vram[addr-0x8000]
@@ -140,21 +143,22 @@ func (g *GBGpu) ReadAddress(addr uint16) byte {
 		if reg != nil {
 			return *reg
 		} else {
-			panic(fmt.Sprintf("Invalid read of address %d from GPU", addr))
+			log.Panicf("Invalid read of address %d from GPU", addr)
 		}
 	}
-	panic(fmt.Sprintf("Invalid read of address %d from GPU", addr))
+	log.Panicf("Invalid read of address %d from GPU", addr)
+	panic("unreachable")
 }
 
-func (g *GBGpu) readVRAM(addr uint16, length uint16) []byte {
+func (g *Gpu) readVRAM(addr uint16, length uint16) []byte {
 	if addr < 0x8000 || (addr+length) > 0xA000 {
-		panic(fmt.Sprintf("Invalid read of length %d at address %d from GPU", length, addr))
+		log.Panicf("Invalid read of length %d at address %d from GPU", length, addr)
 	}
 	addr -= 0x8000
 	return g.vram[addr : addr+length]
 }
 
-func (g *GBGpu) WriteAddress(addr uint16, val byte) {
+func (g *Gpu) WriteAddress(addr uint16, val byte) {
 	switch {
 	case addr >= 0x8000 && addr < 0xA000:
 		g.vram[addr-0x800] = val
@@ -175,11 +179,11 @@ func (g *GBGpu) WriteAddress(addr uint16, val byte) {
 			*reg = val
 		}
 	default:
-		panic(fmt.Sprintf("Invalid read of address %d from GPU", addr))
+		log.Panicf("Invalid read of address %d from GPU", addr)
 	}
 }
 
-func (g *GBGpu) DMALoad(data []byte) {
+func (g *Gpu) DMALoad(data []byte) {
 	// This may actually be totally wrong and unnecessary
 	// Sad bitmath ahead
 	// 3.5bytes -> 4 bytes
@@ -191,7 +195,7 @@ func (g *GBGpu) DMALoad(data []byte) {
 	// copy(g.vram[0x8000:], data)
 	destAddr := 0x8000
 	if len(data) != 140 {
-		panic(fmt.Sprintf("Invalid DMA Load of length %d", len(data)))
+		log.Panicf("Invalid DMA Load of length %d", len(data))
 	}
 
 	for i := 0; i < 140; i += 7 {
@@ -214,7 +218,7 @@ func (g *GBGpu) DMALoad(data []byte) {
 
 }
 
-func (g *GBGpu) renderScan() {
+func (g *Gpu) renderScan() {
 	/*
 	 *	Relevant addresses:
 	 *		tile map 0 => 0x9800 - 0x9BFF
@@ -241,7 +245,7 @@ func (g *GBGpu) renderScan() {
 	}
 }
 
-func (g *GBGpu) renderLine(screenXPos, xOffset, yOffset byte, isWindow bool) []byte {
+func (g *Gpu) renderLine(screenXPos, xOffset, yOffset byte, isWindow bool) []byte {
 	var tileMapAddress uint16
 	var tileDataAddress int
 	var mapAddressBit byte
@@ -298,7 +302,7 @@ func (g *GBGpu) renderLine(screenXPos, xOffset, yOffset byte, isWindow bool) []b
 // Extract a row of palette colors from the tile data
 // Tile data maps like this:
 // 11110000 11001100 -> 3 3 2 2 1 1 0 0
-func (g *GBGpu) tileToColors(tileData []byte, row uint) []byte {
+func (g *Gpu) tileToColors(tileData []byte, row uint) []byte {
 	colorData := make([]byte, 8)
 	tileData = tileData[row*2 : (row*2)+2]
 	for x := 0; x < 8; x++ {
@@ -316,7 +320,7 @@ func tileShade(palette byte, index byte) byte {
 	return (palette >> colorShift) & 0x3
 }
 
-func (g *GBGpu) renderSprites(backgroundLineColors []byte) {
+func (g *Gpu) renderSprites(backgroundLineColors []byte) {
 	sprites := g.getDrawableSprites()
 
 	for _, sprite := range sprites {
@@ -352,7 +356,7 @@ func (g *GBGpu) renderSprites(backgroundLineColors []byte) {
 
 // Returns a list of sprites to draw for the current line in ascending priority order.
 // There are at most 10 sprites in the list
-func (g *GBGpu) getDrawableSprites() spriteList {
+func (g *Gpu) getDrawableSprites() spriteList {
 	var sprites spriteList
 	oamData := g.oam[:]
 	oamLen := len(oamData)
@@ -392,21 +396,21 @@ func (g *GBGpu) getDrawableSprites() spriteList {
 	return sprites
 }
 
-func (g *GBGpu) spriteHeight() byte {
+func (g *Gpu) spriteHeight() byte {
 	if common.HasFlagSet(g.LCDC, lcdcSpriteSize) {
 		return 16
 	}
 	return 8
 }
 
-func (g *GBGpu) spritePattern(s sprite, line byte) []byte {
+func (g *Gpu) spritePattern(s sprite, line byte) []byte {
 	const spriteDataTable uint16 = 0x8000
 	spriteData := g.readVRAM(spriteDataTable+uint16(s.pattern)*16+uint16(line)*2, 2)
 	spriteData = g.tileToColors(spriteData, 0)
 	return spriteData
 }
 
-func (g *GBGpu) Step(stepLength uint) {
+func (g *Gpu) Step(stepLength uint) {
 
 	g.modeClock += stepLength
 
@@ -447,6 +451,6 @@ func (g *GBGpu) Step(stepLength uint) {
 	}
 }
 
-func (g *GBGpu) MClocksToVBlank() uint {
+func (g *Gpu) MClocksToVBlank() uint {
 	return 17556
 }

@@ -1,6 +1,8 @@
 // vim: noet:ts=3:sw=3:sts=3
 package cartridge
 
+import "log"
+
 type Cartridge interface {
 	ReadAddress(addr uint16) uint8
 	WriteAddress(addr uint16, val uint8)
@@ -9,7 +11,7 @@ type Cartridge interface {
 func NewCartridge(cartridgeROM []byte) Cartridge {
 	// Cartridge ROM header length is 0x14F
 	if len(cartridgeROM) < 0x14F {
-		panic("Cartridge ROM is too short. Cannot contain full header.")
+		log.Panicln("Cartridge ROM is too short and does not contain a full header.")
 	}
 	switch cartridgeROM[0x147] {
 	case 0x0:
@@ -18,6 +20,7 @@ func NewCartridge(cartridgeROM []byte) Cartridge {
 		return NewMbc1Cartridge(cartridgeROM)
 	// refer to page 11 of manual for other cartridge types
 	default:
-		panic("Invalid cartridge type.")
+		log.Panicf("Invalid cartridge type %x.\n", cartridgeROM[0x147])
+		panic("unreachable")
 	}
 }

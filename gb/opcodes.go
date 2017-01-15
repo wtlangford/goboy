@@ -6,5 +6,5 @@ type Opcode struct {
 	ParamLen    uint8
 	ShortCycles uint8
 	LongCycles  uint8
-	Func        func(*GBProcessor, byte, ...byte)
+	Func        func(*Processor, byte, ...byte)
 }

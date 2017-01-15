@@ -4,29 +4,27 @@ package gb
 import (
 	"github.com/wtlangford/goboy/cartridge"
 	gpu "github.com/wtlangford/goboy/gpu"
-	gbgpu "github.com/wtlangford/goboy/gpu/gb"
 	processor "github.com/wtlangford/goboy/processor"
-	gbprocessor "github.com/wtlangford/goboy/processor/gb"
 )
 
-type GBBus struct {
-	gpu       *gbgpu.GBGpu
+type Bus struct {
+	gpu       *Gpu
 	cartridge cartridge.Cartridge
-	processor *gbprocessor.GBProcessor
+	processor *Processor
 
 	internalRAM [0x2000]byte // 8kB
 	highRAM     [127]byte
 }
 
-func NewGBBus(cartridgeData []byte) *GBBus {
-	bus := &GBBus{}
-	bus.gpu = gbgpu.NewGBGpu(bus)
+func NewBus(cartridgeData []byte) *Bus {
+	bus := &Bus{}
+	bus.gpu = NewGpu(bus)
 	bus.cartridge = cartridge.NewCartridge(cartridgeData)
-	bus.processor = gbprocessor.NewGBProcessor(bus)
+	bus.processor = NewProcessor(bus)
 	return bus
 }
 
-func (b *GBBus) ReadAddress(addr uint16) uint8 {
+func (b *Bus) ReadAddress(addr uint16) uint8 {
 	switch {
 	case addr < 0x8000: // ROM BANK 0 | Switchable ROM bank
 		return b.cartridge.ReadAddress(addr)
@@ -58,7 +56,7 @@ func (b *GBBus) ReadAddress(addr uint16) uint8 {
 	return 0
 }
 
-func (b *GBBus) WriteAddress(addr uint16, val uint8) {
+func (b *Bus) WriteAddress(addr uint16, val uint8) {
 	switch {
 	case addr < 0x8000: // Cartridge ROM - Control
 		b.cartridge.WriteAddress(addr, val)
@@ -89,14 +87,14 @@ func (b *GBBus) WriteAddress(addr uint16, val uint8) {
 	}
 }
 
-func (b *GBBus) Gpu() gpu.GPU {
+func (b *Bus) Gpu() gpu.GPU {
 	return b.gpu
 }
 
-func (b *GBBus) Processor() processor.Processor {
+func (b *Bus) Processor() processor.Processor {
 	return b.processor
 }
 
-func (b *GBBus) Cartridge() cartridge.Cartridge {
+func (b *Bus) Cartridge() cartridge.Cartridge {
 	return b.cartridge
 }
