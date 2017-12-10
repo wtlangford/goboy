@@ -115,19 +115,19 @@ func (p *Processor) dec_r(opcode byte, params ...byte) {
 	var f uint8 = GBFlagSubtract
 
 	switch opcode {
-	case 0x3c:
+	case 0x3d:
 		val = &p.regs.A
-	case 0x04:
+	case 0x05:
 		val = &p.regs.B
-	case 0x0c:
+	case 0x0d:
 		val = &p.regs.C
-	case 0x14:
+	case 0x15:
 		val = &p.regs.D
-	case 0x1c:
+	case 0x1d:
 		val = &p.regs.E
-	case 0x24:
+	case 0x25:
 		val = &p.regs.H
-	case 0x2c:
+	case 0x2d:
 		val = &p.regs.L
 	case 0x35:
 		v := p.readAddress(p.regs.HL())

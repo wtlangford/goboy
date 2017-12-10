@@ -1,7 +1,11 @@
 // vim: noet:ts=3:sw=3:sts=3
 package gb
 
-import "github.com/wtlangford/goboy/bus"
+import (
+	//"fmt"
+
+	"github.com/wtlangford/goboy/bus"
+)
 
 const (
 	GBFlagCarry     uint8 = 1 << 4
@@ -82,6 +86,17 @@ type Processor struct {
 func NewProcessor(bus bus.Bus) *Processor {
 	proc := &Processor{bus: bus}
 	proc.initOpcodes()
+	proc.regs = Registers{
+		A:  0x01,
+		C:  0x13,
+		E:  0xD8,
+		F:  0xB0,
+		H:  0x01,
+		L:  0x4D,
+		SP: 0xFFFE,
+		PC: 0x0100,
+	}
+	proc.regs.PC = 0x0100
 	return proc
 }
 
@@ -89,10 +104,12 @@ func (p *Processor) Step() uint {
 	var opcode Opcode
 	op := p.readAddress(p.regs.PC)
 	oplen := 1
+	//var cb bool
 	if op == 0xCB {
 		op = p.readAddress(p.regs.PC + 1)
 		opcode = p.cbOpcodes[op]
 		oplen += 1
+		//	cb = true
 	} else {
 		opcode = p.opcodes[op]
 	}

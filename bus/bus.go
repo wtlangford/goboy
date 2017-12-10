@@ -13,4 +13,5 @@ type Bus interface {
 	Gpu() gpu.GPU
 	Processor() processor.Processor
 	Cartridge() cartridge.Cartridge
+	CompletedFrame(frameBuffer []byte)
 }

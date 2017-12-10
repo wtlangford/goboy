@@ -112,7 +112,7 @@ func (sl spriteList) Swap(i, j int) {
 }
 
 func NewGpu(bus bus.Bus) *Gpu {
-	gpu := Gpu{bus: bus}
+	gpu := Gpu{bus: bus, LCDC: 0x91, BackgroundPalette: 0xFC, ObjectPalette0: 0xFF, ObjectPalette1: 0xFF}
 
 	gpu.registerMap = map[uint16]*byte{
 		0xFF40: &gpu.LCDC,
@@ -161,7 +161,7 @@ func (g *Gpu) readVRAM(addr uint16, length uint16) []byte {
 func (g *Gpu) WriteAddress(addr uint16, val byte) {
 	switch {
 	case addr >= 0x8000 && addr < 0xA000:
-		g.vram[addr-0x800] = val
+		g.vram[addr-0x8000] = val
 	case addr > 0xFE00 && addr < 0xFEA0:
 		g.oam[addr-0xFE00] = val
 	case addr >= 0xFF40:
@@ -435,6 +435,7 @@ func (g *Gpu) Step(stepLength uint) {
 			g.scanline++
 			if g.scanline == 143 {
 				g.mode = gpuModeVerticalBlank
+				g.bus.CompletedFrame(g.FrameBuffer[:])
 				// TODO: render frame?
 			}
 		}

@@ -84,17 +84,18 @@ func (c *Mbc1Cartridge) writeControl(addr uint16, val uint8) {
 }
 
 func (c *Mbc1Cartridge) remapBanks() {
-	romSelect := uint16(c.romSwitch & 0x1f) // Low 5 bits
+	romSelect := uint(c.romSwitch & 0x1f) // Low 5 bits
 	if romSelect == 0 {
 		romSelect = 1
 	}
-	ramSelect := uint16(c.ramSwitch & 0x3) // Low 2 bits
+	ramSelect := uint(c.ramSwitch & 0x3) // Low 2 bits
 
 	if c.addressMode == false { // 16/8
 		romSelect |= ramSelect << 5
 		ramSelect = 0
 	}
 
+	//log.Printf("Mapping bank %d (c.rom[%d : %d]). len(c.rom) is %d\n", romSelect, romBankSize*romSelect, romBankSize*(romSelect+1), len(c.rom))
 	c.romBank = c.rom[romBankSize*romSelect : romBankSize*(romSelect+1)]
 	c.ramBank = c.ram[ramBankSize*ramSelect : ramBankSize*(ramSelect+1)]
 }
