@@ -1,0 +1,4 @@
+github.com/dh1tw/gosamplerate v0.1.2 h1:oyqtZk67xB9B4l+vIZCZ3F0RYV/z66W58VOah11/ktI=
+github.com/dh1tw/gosamplerate v0.1.2/go.mod h1:zooTyHpoR7hE+FLfdE3yjLHb2QA2NpMusNfuaZqEACM=
+github.com/veandco/go-sdl2 v0.4.4 h1:coOJGftOdvNvGoUIZmm4XD+ZRQF4mg9ZVHmH3/42zFQ=
+github.com/veandco/go-sdl2 v0.4.4/go.mod h1:FB+kTpX9YTE+urhYiClnRzpOXbiWgaU3+5F2AB78DPg=
